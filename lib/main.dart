@@ -1,6 +1,8 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:prayojana_new/screens/member_screen.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:prayojana_new/bottom_navigaton.dart';
+import 'screens/auth Page/auth_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,9 +16,15 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
+        theme: ThemeData(
+        textTheme: GoogleFonts.interTextTheme(
+        Theme.of(context).textTheme,
+        ),
+        ),
       home: //RegisterScreen(),
-      MemberScreen(),
+      //MemberScreen(),
+     BottomNavigator(),
     );
   }
 }

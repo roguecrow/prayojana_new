@@ -1,13 +1,10 @@
-import 'dart:developer';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
-import 'package:pin_code_fields/pin_code_fields.dart';
-
-import '../services/api_service.dart';
-import 'member_screen.dart';
+import 'package:prayojana_new/bottom_navigaton.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../services/api_service.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -25,16 +22,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String otpPin = "";
   String countryDial = "+1";
   String verID = "";
+  bool isVerifyingOTP = false;
 
   int screenState = 0;
   bool isOtpButtonDisabled = false;
-// Add a boolean variable
 
-  Color blue = const Color(0xff8cccff);
+  Color blue = const Color(0xffd1d5db);
 
   Future<void> verifyPhone(String number) async {
     setState(() {
-      isOtpButtonDisabled = true; // Disable the "Get OTP" button while OTP request is in progress
+      isOtpButtonDisabled = true;
     });
 
     await FirebaseAuth.instance.verifyPhoneNumber(
@@ -57,48 +54,58 @@ class _RegisterScreenState extends State<RegisterScreen> {
         showSnackBarText("Timeout!");
       },
     ).whenComplete(() {
-      if (mounted) { // Check if the widget is still mounted before calling setState
+      if (mounted) {
         setState(() {
-          isOtpButtonDisabled = false; // Re-enable the "Get OTP" button after OTP request is completed or failed
+          isOtpButtonDisabled = false;
         });
       }
     });
   }
 
   Future<void> verifyOTP() async {
+    setState(() {
+      isVerifyingOTP = true;
+    });
+
     await FirebaseAuth.instance.signInWithCredential(
       PhoneAuthProvider.credential(
         verificationId: verID,
-        smsCode:otpPin,
+        smsCode: otpPin,
       ),
     ).then((authResult) async {
       bool isTokenVerified = await getFirebaseAccessToken(authResult.user);
       if (isTokenVerified) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const MemberScreen(),
+            builder: (context) => const BottomNavigator(),
           ),
         );
       } else {
         showSnackBarText("User does not exist.");
       }
+    }).whenComplete(() {
+      if (mounted) {
+        setState(() {
+          isVerifyingOTP = false;
+        });
+      }
     });
   }
+
 
   Future<bool> getFirebaseAccessToken(User? user) async {
     if (user != null) {
       String? accessToken = await user.getIdToken();
 
       if (accessToken != null) {
-        print("Firebase access token: $accessToken");
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('firebaseAccessToken', accessToken);
+
         final apiService = ApiService();
-        var response = await apiService.postBearerToken(accessToken);
+        var response = await apiService.postBearerToken();
         if (response.statusCode == 200) {
-          print(response.body);
-          print('Token verified and successful');
           return true;
         } else {
-          print('Token verification failed');
           return false;
         }
       }
@@ -108,10 +115,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> registerUserAndVerifyPhone() async {
     try {
-      // Call the API to post the phone number and proceed with phone verification
       final apiService = ApiService();
       var response = await apiService.postUserData(countryDial + phoneController.text);
-      print(response.body);
       if (response.statusCode == 200) {
         showSnackBarText("API call success, now verify phone number!");
         verifyPhone(countryDial + phoneController.text);
@@ -119,12 +124,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         showSnackBarText("API call failed, try again later.");
       }
     } catch (e) {
-      log(e.toString());
       showSnackBarText("Error occurred, try again later.");
     } finally {
-      if (mounted) { // Check if the widget is still mounted before calling setState
+      if (mounted) {
         setState(() {
-          isOtpButtonDisabled = false; // Re-enable the "Get OTP" button after OTP request is completed or failed
+          isOtpButtonDisabled = false;
         });
       }
     }
@@ -144,34 +148,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return Future.value(false);
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xffd1d5db),
+        resizeToAvoidBottomInset: false,
         body: SizedBox(
           height: screenHeight,
           width: screenWidth,
           child: Stack(
+            alignment: Alignment.center,
             children: [
-              Align(
-                alignment: Alignment.topCenter,
+              Positioned(
+                top: screenHeight / 17,
                 child: Padding(
-                  padding: EdgeInsets.only(top: screenHeight / 8),
-                  child: Column(
-                    children: [
-                      Text(
-                        "JOIN US",
-                        style: GoogleFonts.montserrat(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: screenWidth / 8,
-                        ),
-                      ),
-                      Text(
-                        "Create an account today!",
-                        style: GoogleFonts.montserrat(
-                          color: Colors.white,
-                          fontSize: screenWidth / 30,
-                        ),
-                      ),
-                    ],
+                  padding: const EdgeInsets.all(105.0),
+                  child: SizedBox(
+                    child: Image.asset(
+                      'assets/Prayojana_logo.png',
+                      fit: BoxFit.cover,
+                    ),
                   ),
                 ),
               ),
@@ -180,21 +173,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: AnimatedContainer(
                   height: screenHeight / 1.5,
                   width: screenWidth,
-                  color: Colors.white,
                   duration: const Duration(milliseconds: 800),
                   curve: Curves.fastLinearToSlowEaseIn,
                   child: Padding(
                     padding: EdgeInsets.only(
                       left: screenWidth / 12,
                       right: screenWidth / 12,
-                      top: screenHeight / 17,
+                      bottom: screenHeight / 3,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
+                        Text(
+                          "Sign in to your account",
+                          style: GoogleFonts.inter(
+                            textStyle: Theme.of(context).textTheme.displayLarge,
+                            fontSize: 28,
+                            fontWeight: FontWeight.w700,
+                            fontStyle: FontStyle.normal,
+                            color: const Color(0xff000000),
+                            height: 24 / 22,
+                          ),
+                          textAlign: TextAlign.left,
+                        ),
+
                         screenState == 0 ? stateRegister() : stateOTP(),
                         GestureDetector(
-                          onTap: isOtpButtonDisabled
+                          onTap: isVerifyingOTP
                               ? null
                               : () {
                             if (screenState == 0) {
@@ -202,11 +207,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 showSnackBarText("Phone number is still empty!");
                               } else {
                                 if (countryDial == "+1") {
-                                  // Show a snackbar informing the user to select a country code
                                   showSnackBarText("Please select a country code.");
                                   return;
-                                }
-                                else {
+                                } else {
                                   registerUserAndVerifyPhone();
                                 }
                               }
@@ -221,25 +224,50 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: Container(
                             height: 50,
                             width: screenWidth,
-                            margin: EdgeInsets.only(bottom: screenHeight / 12),
+                            margin: EdgeInsets.only(bottom: screenHeight / 20),
                             decoration: BoxDecoration(
-                              color: isOtpButtonDisabled ? Colors.grey : Colors.black, // Disable the button when isOtpButtonDisabled is true
-                              borderRadius: BorderRadius.circular(50),
+                              color: isVerifyingOTP ? Colors.grey : const Color(0xff006bbf),
+                              borderRadius: BorderRadius.circular(6),
                             ),
                             child: Center(
-                              child: isOtpButtonDisabled
-                                  ? CircularProgressIndicator(color: Colors.white) // Show a loading indicator on the button when isOtpButtonDisabled is true
+                              child: isVerifyingOTP
+                                  ? const CircularProgressIndicator(color: Colors.white)
                                   : Text(
-                                "CONTINUE",
-                                style: GoogleFonts.montserrat(
+                                screenState == 0 ? "Get OTP" : "Verify Account",
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
                                   color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  letterSpacing: 1.5,
-                                  fontSize: 18,
                                 ),
+                                textAlign: TextAlign.center,
                               ),
                             ),
                           ),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              "Are you a new customer? ",
+                              style: GoogleFonts.inter(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () {
+                                // Navigator.push(context, MaterialPageRoute(builder: (context) => SignUpScreen()));
+                              },
+                              child: Text(
+                                "Sign Up",
+                                style: GoogleFonts.inter(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                  color: const Color(0xff008fff),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -263,9 +291,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     }
   }
 
-
   Widget stateRegister() {
-
     countryDial = "+91";
 
     return Column(
@@ -273,100 +299,103 @@ class _RegisterScreenState extends State<RegisterScreen> {
       children: [
         Text(
           "Phone number",
-          style: GoogleFonts.montserrat(
-            color: Colors.black87,
-            fontWeight: FontWeight.bold,
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xff374151),
+            height: 20 / 14,
           ),
+          textAlign: TextAlign.left,
         ),
         const SizedBox(height: 8,),
         IntlPhoneField(
           controller: phoneController,
           showCountryFlag: false,
           showDropdownIcon: true,
-          initialCountryCode: "IN", // Set the default country code to India's code
+          initialCountryCode: "IN",
           onChanged: (phone) {
             setState(() {
               countryDial = "+" + phone.countryCode;
             });
           },
-          decoration: InputDecoration(
+          decoration: const InputDecoration(
             border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.grey),
+              borderSide: BorderSide(color: Color(0xff6b7280)),
             ),
             focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: const BorderSide(color: Colors.black),
+              borderSide: BorderSide(color: Color(0xff6b7280)),
             ),
-            contentPadding: const EdgeInsets.symmetric(
+            contentPadding: EdgeInsets.symmetric(
               horizontal: 16,
             ),
+            counterText: "",
+            hintText: "+1 (555) 987-6543",
           ),
         ),
       ],
     );
   }
 
-
   Widget stateOTP() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        const SizedBox(height: 20),
+        Text(
+          "OTP",
+          style: GoogleFonts.inter(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: const Color(0xff374151),
+            height: 20 / 14,
+          ),
+          textAlign: TextAlign.left,
+        ),
+        const SizedBox(height: 8,),
+        Stack(
+          children: [
+            TextField(
+              keyboardType: TextInputType.number,
+              onChanged: (value) {
+                setState(() {
+                  otpPin = value;
+                });
+              },
+              decoration: const InputDecoration(
+                labelText: 'enter OTP',
+                hintText: '******',
+                border: OutlineInputBorder(),
+              ),
+            ),
+            Positioned(
+              right: 16,
+              top: 20,
+              child: TweenAnimationBuilder<Duration>(
+                duration: const Duration(minutes: 1),
+                tween: Tween(begin: const Duration(minutes: 1), end: Duration.zero),
+                onEnd: () {
+                  print('Timer ended');
+                },
+                builder: (BuildContext context, Duration value, Widget? child) {
+                  final minutes = value.inMinutes;
+                  final seconds = value.inSeconds % 60;
+                  return Text(
+                    '$minutes:$seconds',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Color(0xff6b7280),
+                      fontWeight: FontWeight.w400,
+                      fontSize: 16,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
         RichText(
-          textAlign: TextAlign.center,
           text: TextSpan(
             children: [
-              TextSpan(
-                text: "We just sent a code to ",
-                style: GoogleFonts.montserrat(
-                  color: Colors.black87,
-                  fontSize: 18,
-                ),
-              ),
-              TextSpan(
-                text: countryDial + phoneController.text,
-                style: GoogleFonts.montserrat(
-                  color: Colors.black87,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-              TextSpan(
-                text: "\nEnter the code here and we can continue!",
-                style: GoogleFonts.montserrat(
-                  color: Colors.black87,
-                  fontSize: 12,
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 20,),
-        PinCodeTextField(
-          appContext: context,
-          length: 6,
-          onChanged: (value) {
-            setState(() {
-              otpPin = value;
-            });
-          },
-          pinTheme: PinTheme(
-            activeColor: blue,
-            selectedColor: Colors.black,
-            inactiveColor: Colors.black26,
-          ),
-        ),
-        const SizedBox(height: 20,),
-        RichText(
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: "Didn't receive the code? ",
-                style: GoogleFonts.montserrat(
-                  color: Colors.black87,
-                  fontSize: 12,
-                ),
-              ),
               WidgetSpan(
                 child: GestureDetector(
                   onTap: () {
@@ -375,11 +404,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     });
                   },
                   child: Text(
-                    "Resend",
-                    style: GoogleFonts.montserrat(
-                      color: Colors.black87,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
+                    "Change Phone number",
+                    style: GoogleFonts.inter(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0xff4287bd),
+                      height: 3,
                     ),
                   ),
                 ),
@@ -387,6 +417,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ],
           ),
         ),
+        const SizedBox(height: 8),
       ],
     );
   }
