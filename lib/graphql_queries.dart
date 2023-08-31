@@ -82,7 +82,7 @@ const String combinedMutation = r'''
 
 const String getTaskQuery = r'''
   query MyQuery {
-  task_members(order_by: {id: asc}) {
+  task_members(order_by: {id: desc}) {
     id
     member_id
     task_id
@@ -121,12 +121,13 @@ const String getTaskQuery = r'''
 ''';
 
 const String updateTaskQuery = r'''
-  mutation UpdateTask($taskId: Int!, $taskTitle: String!, $dueDate: date!, $taskNotes: String!, $taskStatusTypeId: Int!, $serviceProviderId: Int!) {
+  mutation UpdateTask($taskId: Int!, $taskTitle: String!, $dueDate: date!, $dueTime: time!, $taskNotes: String!, $taskStatusTypeId: Int!, $serviceProviderId: Int!) {
     update_tasks(
       where: {id: {_eq: $taskId}},
       _set: {
         task_title: $taskTitle, 
         due_date: $dueDate,
+        due_time: $dueTime,
         task_notes: $taskNotes,
         task_status_type_id: $taskStatusTypeId,
         service_provider_id: $serviceProviderId,
@@ -151,6 +152,26 @@ const String updateInteractionQuery =r'''
         }
       }
     ''';
+
+
+
+const String updateInteractionAttachmentsQuery = r'''
+  mutation UpdateAttachment(\$interactionId: Int!, \$fileType: String!, \$url: String!) {
+            update_interaction_attachements(
+              where: { interaction_id: { _eq: \$interactionId } },
+              _set: { file_type: \$fileType, url: \$url }
+            ) {
+              affected_rows
+              returning {
+                id
+                interaction_id
+                file_type
+                url
+              }
+            }
+          }
+''';
+
 
 
 const String getTaskStatusTypesQuery = '''
@@ -197,6 +218,16 @@ const String getServiceProviderTypesQuery = '''
   }
 }
 ''';
+
+const String getAllMembersQuery = '''
+  query MyQuery {
+      members {
+        id
+        name
+      }
+    }
+''';
+
 
 const String insertTaskMembersMutation = r'''
   mutation MyMutation(
@@ -262,7 +293,7 @@ const String insertTaskMembersMutation = r'''
 
 const String getInteractionQuery = '''
     query MyQuery {
-      interaction_members(order_by: {id: desc}) {
+      interaction_members(order_by: {id: desc}, limit: 40) {
         interaction {
           carebuddy_id
           id
@@ -300,4 +331,6 @@ const String getInteractionQuery = '''
       }
     }
   ''';
+
+
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../drawer_items.dart';
 class DashboardScreen extends StatefulWidget {
@@ -58,10 +59,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
         ],
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(5),
-            bottomRight: Radius.circular(5),
+            bottomLeft: Radius.circular(5.w),
+            bottomRight: Radius.circular(5.w),
           ),
         ),
       ),

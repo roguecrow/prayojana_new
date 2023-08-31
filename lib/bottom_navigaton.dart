@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:prayojana_new/screens/calendar%20page/calendar_screen.dart';
 import 'package:prayojana_new/screens/dashboard%20page/dashboard_screen.dart';
 import 'package:prayojana_new/screens/interactions%20page/interaction_screen.dart';
@@ -59,6 +60,8 @@ class _BottomNavigatorState extends State<BottomNavigator> {
         ],
         selectedItemColor: Colors.blue,
         unselectedItemColor: Colors.black,
+        selectedLabelStyle: TextStyle(fontSize: 12.sp),
+        unselectedLabelStyle: TextStyle(fontSize: 12.sp),
       ),
     );
   }

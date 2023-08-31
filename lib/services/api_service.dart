@@ -64,9 +64,9 @@ class MemberApi {
 
     var request = http.Request(
       'POST',
-      Uri.parse(ApiConstants.graphqlUrl),
+      Uri.parse(ApiConstants.memberUrl),
     );
-    request.body = graphQLQuery;
+
     request.headers.addAll(headers);
 
     http.StreamedResponse response = await request.send();
@@ -74,10 +74,10 @@ class MemberApi {
     if (response.statusCode == 200) {
       String responseString = await response.stream.bytesToString();
       Map<String, dynamic> responseData = json.decode(responseString);
-      List<dynamic>? members = responseData['data']?['members'];
-      print(responseData);
-      print('Members Data: $members'); // Print the fetched members data
-      return members;
+      List<dynamic>? memberData = responseData['memberData'];
+
+      print('Members Data: $memberData'); // Print the fetched members data
+      return memberData;
     } else {
       print('API Error: ${response.reasonPhrase}');
       return null;
@@ -116,10 +116,9 @@ class MemberApi {
 
     var request = http.Request(
       'POST',
-      Uri.parse(ApiConstants.graphqlUrl),
+      Uri.parse(ApiConstants.taskUrl),
     );
 
-    request.body = json.encode({'query': getTaskQuery}); // Pass the GraphQL query
     request.headers.addAll(headers);
 
     http.StreamedResponse response = await request.send();
@@ -127,7 +126,7 @@ class MemberApi {
     if (response.statusCode == 200) {
       String responseString = await response.stream.bytesToString();
       Map<String, dynamic> responseData = json.decode(responseString);
-      List<dynamic>? taskMembers = responseData['data']?['task_members'];
+      List<dynamic>? taskMembers = responseData['taskMembersData'];
       print('Task Members Data: $taskMembers');
       return taskMembers;
     } else {
@@ -186,6 +185,7 @@ class Taskapi{
       throw Exception('Failed to perform mutation: $error');
     }
   }
+
 }
 
 

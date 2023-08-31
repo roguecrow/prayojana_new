@@ -1,13 +1,19 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
+import 'package:permission_handler/permission_handler.dart';
 import '../../constants.dart';
 import '../../graphql_queries.dart';
 import '../../services/api_service.dart';
+import 'package:file_picker/file_picker.dart';
+
+import '../tasks page/create_new_task.dart';
 
 class InteractionDetailsScreen extends StatefulWidget {
+
   final Map<String, dynamic> selectedInteractionMember;
 
   const InteractionDetailsScreen({
@@ -20,18 +26,22 @@ class InteractionDetailsScreen extends StatefulWidget {
 }
 
 class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   List<Map<String, dynamic>> interactionTypes = [];
   List<Map<String, dynamic>> interactionStatusTypes = [];
   int? selectedInteractionTypeId;
   int? selectedInteractionStatusTypeId;
   List<String> memberNames = [];
   final _dropdownFocusNode = FocusNode();
+  bool isLoading = false;
+  FilePickerResult? result;
+  PlatformFile? pickedfile;
+  List<String> _fileNames = [];
+  List<File> fileToDisplay = [];
   // final TextEditingController _locationController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
   final TextEditingController _dueDateController = TextEditingController();
   final TextEditingController _taskController = TextEditingController();
-
-
 
 
 
@@ -45,8 +55,6 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
     _fetchInteractionTypes();
     _fetchInteractionStatusTypes();
   }
-
-
 
   void _fetchMemberName() {
     final memberName = widget.selectedInteractionMember['member']['name'] as String?;
@@ -112,28 +120,171 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
     }
   }
 
+  Future<void> pickFile() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      FilePickerResult? pickedFiles = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        //allowMultiple: true, // Allow multiple files to be picked
+        //allowedExtensions: ['png', 'pdf', 'jpeg', 'jpg'],
+      );
+
+      if (pickedFiles != null) {
+        pickedFiles.files.forEach((pickedFile) {
+          _fileNames.add(pickedFile.name);
+          fileToDisplay.add(File(pickedFile.path.toString()));
+        });
+      }
+    } catch (e) {
+      print(e);
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _updateAttachment(String fileType, String url) async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({
+          'query': updateInteractionAttachmentsQuery,
+          'variables': {
+            'interactionId': widget.selectedInteractionMember['interaction']['id'],
+            'fileType': fileType,
+            'url': url,
+          },
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Attachment Updated Successfully');
+        print('Response Body: ${response.body}');
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+      }
+    } catch (error) {
+      print('Error updating attachment: $error');
+    }
+  }
+
+
+
+
+ Future <void> _showAttachmentDialog(BuildContext context)async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: Text('Add Attachment'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (fileToDisplay.isNotEmpty) // Display the selected image if available
+                      Column(
+                        children: [
+                          Image.file(
+                            fileToDisplay.first, // Display the first selected image
+                            width: 300.w, // Adjust the width as needed
+                            height: 300.h, // Adjust the height as needed
+                          ),
+                          SizedBox(height: 10.h),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _fileNames.first,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    fileToDisplay.clear();
+                                    _fileNames.clear();
+                                  });
+                                },
+                                icon: Icon(Icons.delete),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop(); // Close the dialog
+                    await pickFile();
+                    // After pickFile is complete
+                    if (fileToDisplay.isNotEmpty) {
+                      final fileType = _fileNames.first.split('.').last;
+                      const url = 'http://qwerty.com'; // Replace with the actual URL
+                      _updateAttachment(
+                        fileType,
+                        url,
+                      );
+                    }// Call the pickFile() function when the "Add" button is pressed
+                  },
+                  child: Text('Add'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+
+
+
 
   Widget buildInfoRow(String title, Widget content) {
     return Row(
       children: [
         Container(
-          width: 120, // Adjust this width as needed
-          padding: const EdgeInsets.only(left: 20.0,top: 15.0),
+          width: 120.w, // Adjust this width as needed
+          padding: EdgeInsets.only(left: 20.0.w,top: 15.0.h),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8.0),
           ),
           child: Text(
             title,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 14.sp,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
         Expanded(
           child: Container(
-            width: 200, // Adjust this width as needed
-            padding: const EdgeInsets.only(top: 15.0),
+            width: 200.w, // Adjust this width as needed
+            padding: EdgeInsets.only(top: 15.0.h),
             child: content,
           ),
         ),
@@ -201,8 +352,6 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
       return;
     }
 
-    String dueDateText = _dueDateController.text ?? '';
-    String notesText = _notesController.text ?? '';
 
     final http.Response response = await http.post(
       Uri.parse(ApiConstants.graphqlUrl),
@@ -236,51 +385,49 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
   }
 
 
-
   String? selectedInteractionType;
   String? selectedInteractionStatusType;
 
   @override
   Widget build(BuildContext context) {
    // final selectedInteractionMember = widget.selectedInteractionMember;
-
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
+          padding: EdgeInsets.only(bottom: 16.0.h),
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.only(top: 25.0),
+                padding: EdgeInsets.only(top: 25.0.h),
                 child: Row(
                   children: [
                     IconButton(
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      icon: const Padding(
-                        padding: EdgeInsets.only(left: 16.12, top: 16.0),
+                      icon: Padding(
+                        padding: EdgeInsets.only(left: 16.12.w, top: 12.0.h),
                         child: Icon(
                           Icons.close,
-                          size: 32,
+                          size: 32.sp,
                         ),
                       ),
                     ),
                     const Spacer(),
                     Padding(
-                      padding: const EdgeInsets.only(right: 25.0, top: 25.0),
+                      padding: EdgeInsets.only(right: 20.0.w, top: 20.0.h),
                       child: ElevatedButton(
                         onPressed: () {
                           _updateInteraction();
                         },
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                          padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 22.w),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Update',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 16.sp,
                           ),
                         ),
                       ),
@@ -289,16 +436,16 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 16.0, right: 16.0),
+                padding: EdgeInsets.only(left: 16.0.w, right: 16.0.w),
                 child: Column(
                   children: [
                     Container(
                       alignment: Alignment.centerLeft,
-                      padding: const EdgeInsets.only(top: 50.0, bottom: 37.0, left: 20.0),
+                      padding: EdgeInsets.only(top: 30.0.h, bottom: 30.0.h, left: 20.0.w),
                       child: Text(
                         widget.selectedInteractionMember['interaction']['title'],
-                        style: const TextStyle(
-                          fontSize: 24,
+                        style: TextStyle(
+                          fontSize: 24.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -311,19 +458,19 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                             alignment: Alignment.centerLeft,
                             child: Text(
                               memberName,
-                              style: const TextStyle(
-                                fontSize: 16,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 color: Color(0xff006bbf),
                               ),
                             ),
                           ),
                       ],
                     )),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 15.h),
                     buildInfoRow( 'Task Title',TextFormField(
                       controller: _taskController, // Attach the TextEditingController
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                       ),
                       maxLines: null, // Allow multiple lines of input
                       decoration: InputDecoration(
@@ -341,8 +488,8 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                       onTap: () {
                         _selectDate(context); // Function to open date picker
                       },
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                       ),
                       decoration: InputDecoration(
                         fillColor: Colors.grey[300],
@@ -360,6 +507,7 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                         print('selectedInteractionTypeId $selectedInteractionTypeId');
                         print('typename ${statusType['name']}');
                         print(widget.selectedInteractionMember['interaction']['id']);
+                        print(widget.selectedInteractionMember['member_id']);
                         return DropdownMenuItem<int>(
                           value: statusType['id'],
                           child: Text(
@@ -430,25 +578,10 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                         ),
                       ),
                     ),),
-                    // buildInfoRow( 'Location',TextFormField(
-                    //   controller: _locationController, // Attach the TextEditingController
-                    //   style: const TextStyle(
-                    //     fontSize: 16,
-                    //   ),
-                    //   maxLines: null, // Allow multiple lines of input
-                    //   decoration: InputDecoration(
-                    //     filled: true,
-                    //     fillColor: Colors.white,
-                    //     border: OutlineInputBorder(
-                    //       borderRadius: BorderRadius.circular(8.0),
-                    //       borderSide: const BorderSide(color: Colors.grey),
-                    //     ),
-                    //   ),
-                    // ),),
                     buildInfoRow( 'Add Notes',TextFormField(
                       controller: _notesController, // Attach the TextEditingController
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                       ),
                       maxLines: null, // Allow multiple lines of input
                       decoration: InputDecoration(
@@ -460,31 +593,25 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                         ),
                       ),
                     ),),
-                    buildInfoRow( 'Add Attachment', Stack(
+                    buildInfoRow('Add \nAttachment', Stack(
                       alignment: Alignment.centerRight,
                       children: [
                         TextFormField(
                           readOnly: true,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          onTap: () async {
+                            _showAttachmentDialog(context);
+                          },
+                          style: TextStyle(
+                            fontSize: 14.sp,
                           ),
                           decoration: InputDecoration(
                             filled: true,
-                            hintText: 'Photos,documents etc..',
-                            //fillColor: Colors.grey[300],
+                            hintText: 'Photos, documents etc..',
+                            suffixIcon: Icon(Icons.add),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8.0),
                               borderSide: BorderSide.none,
                             ),
-                          ),
-                        ),
-                        IconButton(
-                          onPressed: () {
-                            // Handle the add icon button press
-                          },
-                          icon: const Icon(
-                            Icons.add,
-                            color: Colors.grey, // You can adjust the color of the add icon here
                           ),
                         ),
                       ],
@@ -494,18 +621,18 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 16.0,top: 30.0),
+                padding: EdgeInsets.only(left: 16.0.w,top: 30.0.h),
                 child: Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.only(left: 20.0),
+                      padding: EdgeInsets.only(left: 20.0.w),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(8.0),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Add Task',
                         style: TextStyle(
-                          fontSize: 16,
+                          fontSize: 14.sp,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -513,19 +640,24 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                     Align(
                       alignment: Alignment.center, // Adjust the alignment as needed
                       child: Padding(
-                        padding: const EdgeInsets.only(left: 45.0),
+                        padding: EdgeInsets.only(left: 45.0.w),
                         child: OutlinedButton.icon(
                           onPressed: () {
-                            // Respond to button press
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CreateTask(memberId: widget.selectedInteractionMember['member_id']), // Pass the memberId
+                              ),
+                            );
                           },
-                          icon: const Icon(Icons.add, size: 18),
+                          icon: Icon(Icons.add, size: 16.sp),
                           label: const Text("New Task",
                             style: TextStyle(
-                                color: Color(0xff006bbf)
+                                color: Color(0xff006bbf),
                             ),
                           ),
                           style: OutlinedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
+                            padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
                             backgroundColor: const Color(0xffe1f2ff),// Adjust the padding as needed
                             side: BorderSide.none,
                           ),
@@ -543,51 +675,3 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
   }
 }
 
-
-
-
-// buildInfoRow( 'Assigned by', TextFormField(
-//   initialValue: widget.task['user']['name'],
-//   readOnly: true,
-//   style: const TextStyle(
-//     fontSize: 16,
-//   ),
-//   decoration: InputDecoration(
-//     filled: true,
-//     fillColor: Colors.grey[300],
-//     border: OutlineInputBorder(
-//       borderRadius: BorderRadius.circular(8.0),
-//       borderSide: BorderSide.none,
-//     ),
-//   ),
-// )),
-
-// buildInfoRow( 'Service Provider', DropdownButtonFormField<int>(
-//   value: null,
-//   items: distinctServiceProviderTypes.map((provider) {
-//     final serviceProviderId = provider['id'] as int;
-//     final serviceProviderTypeName = provider['service_provider_type']['name'] as String;
-//     //print(widget.task['service_provider_type_id'],);
-//     //print(serviceProviderTypeName);
-//     //print(provider['service_provider_type_id']);
-//     return DropdownMenuItem<int>(
-//       value: serviceProviderId,
-//       child: Text(serviceProviderTypeName),
-//     );
-//   }).toList(),
-//   onChanged: (newValue) {
-//     setState(() {
-//       serviceProviderId = newValue;
-//     });
-//   },
-//   decoration: InputDecoration(
-//     filled: true,
-//     border: OutlineInputBorder(
-//       borderRadius: BorderRadius.circular(8.0),
-//       borderSide: const BorderSide(color: Colors.grey),
-//     ),
-//   ),
-// ),),
-
-
-// ... Repeat similar lines for other rows

@@ -1,4 +1,5 @@
   import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
   import 'package:http/http.dart' as http;
   import 'package:intl/intl.dart';
   import 'package:prayojana_new/screens/interactions%20page/update_interaction_details.dart';
@@ -33,19 +34,18 @@
         'content-type': 'application/json',
         'Authorization': 'Bearer $accessToken',
       };
-      const String url = ApiConstants.graphqlUrl;
+      String url = ApiConstants.interactionUrl;
 
       final http.Response response = await http.post(
         Uri.parse(url),
         headers: headers,
-        body: jsonEncode({'query': getInteractionQuery, 'variables': {}}),
       );
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> responseData = json.decode(response.body);
-        List<dynamic> fetchedInteractionMembers = responseData['data']['interaction_members'];
+        List<dynamic> fetchedInteractionMembers = responseData['interactionMembersData'];
 
-        //print('fetchedInteractionMembers: $fetchedInteractionMembers'); // Add this line
+        print('fetchedInteractionMembers: $fetchedInteractionMembers'); // Add this line
 
         setState(() {
           interactionMembers = fetchedInteractionMembers;
@@ -131,12 +131,12 @@
         body: Column(
           children: [
             Padding(
-              padding: const EdgeInsets.only(top: 20.0, bottom: 20.0),
+              padding: EdgeInsets.only(top: 12.0.h, bottom: 12.0.h),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(left: 20.0),
+                    padding: EdgeInsets.only(left: 20.0.w),
                     child: Row(
                       children: [
                         OutlinedButton(
@@ -145,12 +145,12 @@
                           },
                           style: OutlinedButton.styleFrom(
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(32.0),
+                              borderRadius: BorderRadius.circular(32.0.r),
                             ),
                           ),
                           child: const Text('TODAY'),
                         ),
-                        const SizedBox(width: 9), // Add spacing between buttons
+                         SizedBox(width: 9.w), // Add spacing between buttons
                         OutlinedButton(
                           onPressed: () {
                             // Handle button press
@@ -166,14 +166,14 @@
                     ),
                   ),
                   Padding(
-                    padding: const EdgeInsets.only(right: 20.0),
+                    padding: EdgeInsets.only(right: 20.0.w),
                     child: OutlinedButton(
                       onPressed: () {
                         // Handle button press
                       },
                       style: OutlinedButton.styleFrom(
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(32.0),
+                          borderRadius: BorderRadius.circular(32.0.r),
                         ),
                       ),
                       child: const Text('FILTER'),
@@ -183,7 +183,6 @@
               ),
             ),
             // ... (button row remains the same)
-            const SizedBox(height: 16.0),
             Expanded(
               child: interactionMembers.isEmpty
                   ? const Center(child: CircularProgressIndicator())
@@ -202,25 +201,25 @@
                   //print('interaction details :$interactionMember');
 
                   return SizedBox(
-                    height: 80,
+                    height: 60.h,
                     child: ListTile(
                       contentPadding: const EdgeInsets.fromLTRB(30, 12, 16, 12),
                       title: Padding(
-                        padding: const EdgeInsets.only(bottom: 10.0),
+                        padding: EdgeInsets.only(bottom: 8.0.h),
                         child: Text(
                           title ?? 'N/A',
-                          style: const TextStyle(
-                            fontSize: 20,
+                          style: TextStyle(
+                            fontSize: 18.sp,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
                       ),
                       subtitle: Padding(
-                        padding: const EdgeInsets.only(top: 10.0),
+                        padding: EdgeInsets.only(top: 10.0.h),
                         child: Text(
                           formatDueDate(date) ?? 'N/A',
-                          style: const TextStyle(
-                            fontSize: 16,
+                          style: TextStyle(
+                            fontSize: 14.sp,
                             fontWeight: FontWeight.w400,
                           ),
                         ),

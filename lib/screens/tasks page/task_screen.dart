@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:prayojana_new/screens/tasks%20page/create_new_task.dart';
 import 'package:prayojana_new/services/api_service.dart';
@@ -89,12 +90,12 @@ class _TaskScreenState extends State<TaskScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 20.0,bottom: 20.0),
+            padding: EdgeInsets.only(top: 12.0.h, bottom: 12.0.h),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Padding(
-                  padding: const EdgeInsets.only(left: 20.0),
+                  padding: EdgeInsets.only(left: 20.0.w),
                   child: Row(
                     children: [
                       OutlinedButton(
@@ -103,12 +104,12 @@ class _TaskScreenState extends State<TaskScreen> {
                         },
                         style: OutlinedButton.styleFrom(
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(32.0),
+                            borderRadius: BorderRadius.circular(32.0.r),
                           ),
                         ),
                         child: const Text('TODAY'),
                       ),
-                      const SizedBox(width: 9), // Add spacing between buttons
+                      SizedBox(width: 9.w), // Add spacing between buttons
                       OutlinedButton(
                         onPressed: () {
                           // Handle button press
@@ -124,14 +125,14 @@ class _TaskScreenState extends State<TaskScreen> {
                   ),
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(right: 20.0),
+                  padding: EdgeInsets.only(right: 20.0.w),
                   child: OutlinedButton(
                     onPressed: () {
                       // Handle button press
                     },
                     style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32.0),
+                        borderRadius: BorderRadius.circular(32.0.r),
                       ),
                     ),
                     child: const Text('FILTER'),
@@ -141,65 +142,78 @@ class _TaskScreenState extends State<TaskScreen> {
             ),
           ),
           // ... (button row remains the same)
-          const SizedBox(height: 16.0),
+          SizedBox(height: 10.0.h),
           Expanded(
             child: _taskData == null
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.separated(
               itemBuilder: (context, index) {
-                var task = _taskData![index]['task'];
-                return SizedBox(
-                  height: 100, // Adjust the height as needed
-                  child: ListTile(
-                    title: Text(
-                      task['task_title'] ?? 'N/A',
-                      style: TextStyle(
-                        fontSize: 18, // Increase font size
-                        fontWeight: FontWeight.w600,
-                        color: task['task_status_type_id'] == 1
-                            ? Color(int.parse('0xFF${task['task_status_type']['color'].substring(1)}'))
-                            : null,
-                      ),
-                    ),
-                    subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 20.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const SizedBox(height: 8),
-                                Text(
-                                  'Due ${formatDueDate(task['due_date'] ?? 'N/A')}',
-                                  style: const TextStyle(
-                                    fontSize: 14, // Increase font size
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'assigned by ${task['user']['name'] ?? 'N/A'}',
-                                  style: const TextStyle(
-                                    fontSize: 14, // Increase font size
-                                    fontWeight: FontWeight.w400,
-                                  ),
-                                ),
-                              ],
-                            ),
+                var taskEntry = _taskData![index];
+                if (taskEntry != null && taskEntry.containsKey('task')) {
+                  var task = taskEntry['task'];
+                  if (task != null && task.containsKey('task_title') && task.containsKey('user')) {
+                    var taskTitle = task['task_title'] as String?;
+                    var userName = task['user']['name'] as String?;
+
+                    return SizedBox(
+                      height: 80.h, // Adjust the height as needed
+                      child: ListTile(
+                        title: Text(
+                          taskTitle ?? 'N/A',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                            color: task['task_status_type_id'] == 1
+                                ? Color(int.parse('0xFF${task['task_status_type']['color'].substring(1)}'))
+                                : null,
                           ),
-                          Transform.translate(
-                            offset: const Offset(0, -8),
-                            child: const Icon(Icons.arrow_forward_ios_rounded),
+                        ),
+                        subtitle: Padding(
+                          padding: EdgeInsets.only(top: 15.0.h),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                     SizedBox(height: 8.h),
+                                    Text(
+                                      'Due ${task['due_date'] != null ? 'Due ${formatDueDate(task['due_date'])}' : 'N/A'}',
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                     SizedBox(height: 4.h),
+                                    Text(
+                                      'assigned by ${userName ?? 'N/A'}',
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w400,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Padding(
+                                padding: EdgeInsets.only(bottom: 38.0.h),
+                                child: Transform.translate(
+                                  offset: const Offset(0, -8),
+                                  child: const Icon(Icons.arrow_forward_ios_rounded),
+                                ),
+                              ),
+                            ],
                           ),
-                        ],
+                        ),
+                        onTap: () {
+                          _navigateToTaskDetailsScreen(task);
+                        },
                       ),
-                    ),
-                    onTap: () {
-                      _navigateToTaskDetailsScreen(task);
-                    },
-                  ),
-                );
+                    );
+                  }
+                }
+                // If the task data is missing or doesn't match the expected structure
+                return SizedBox();
               },
               separatorBuilder: (context, index) => const Divider(
                 thickness: 2,
@@ -247,6 +261,3 @@ class _TaskScreenState extends State<TaskScreen> {
     }
   }
 }
-
-
-

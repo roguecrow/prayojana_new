@@ -1,4 +1,8 @@
+import 'dart:io';
+
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -23,33 +27,40 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   List<dynamic> serviceProviderTypes = []; // Store service provider types here
   String? selectedServiceProviderType;
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController _timeController = TextEditingController();
   int? selectedTaskStatusTypeId; // Store the selected task status type ID
   int? serviceProviderId; // Store the selected service provider type ID
   int? serviceProviderTypeId;
   final _dropdownFocusNode = FocusNode();
+  bool isLoading = false;
+  FilePickerResult? result;
+  PlatformFile? pickedfile;
+  List<String> _fileNames = [];
+  List<File> fileToDisplay = [];
+  TimeOfDay? _selectedTime;
 
 
   Widget buildInfoRow(String title, Widget content) {
     return Row(
       children: [
         Container(
-          width: 120, // Adjust this width as needed
-          padding: const EdgeInsets.only(left: 20.0),
+          width: 120.w, // Adjust this width as needed
+          padding: EdgeInsets.only(left: 20.0.w,top: 15.0.h),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8.0),
           ),
           child: Text(
             title,
-            style: const TextStyle(
-              fontSize: 16,
+            style: TextStyle(
+              fontSize: 14.sp,
               fontWeight: FontWeight.bold,
             ),
           ),
         ),
         Expanded(
           child: Container(
-            width: 200, // Adjust this width as needed
-            padding: const EdgeInsets.all(8.0),
+            width: 200.w, // Adjust this width as needed
+            padding: EdgeInsets.only(top: 15.0.h),
             child: content,
           ),
         ),
@@ -68,12 +79,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   }
 
   String formatTime(String time) {
-    final originalFormat = DateFormat('HH:mm:ss.SSSSSS');
+    final originalFormat = DateFormat('HH:mm:ss');
     final newFormat = DateFormat('hh:mm a');
 
     final dateTime = originalFormat.parse(time);
     return newFormat.format(dateTime);
   }
+
+
 
   Future<void> _updateTask() async {
     String accessToken = await getFirebaseAccessToken();
@@ -114,6 +127,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
           'taskId': widget.task['id'],
           'taskTitle': widget.task['task_title'],
           'dueDate': _dueDateController.text,
+          'dueTime': _timeController.text,
           'taskStatusTypeId': selectedTaskStatusTypeId, // Use selected task status type
           'serviceProviderId': serviceProviderId, // Use selected service provider type
           'taskNotes': _notesController.text,
@@ -134,7 +148,8 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
   @override
   void initState() {
     super.initState();
-    _dueDateController.text = widget.task['due_date'];
+    _dueDateController.text = formatDueDate(widget.task['due_date']);
+    _timeController.text = formatTime(widget.task['due_time']);
     _notesController.text = widget.task['task_notes'] ?? '';
     _fetchMemberNames();
     _fetchTaskStatusTypes(); // Fetch task status types when the screen initializes
@@ -207,6 +222,171 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     }
   }
 
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2101),
+    );
+    if (picked != null && picked != _dueDateController) {
+      setState(() {
+        _dueDateController.text = DateFormat('dd MMM yyyy').format(picked);
+      });
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedTime ?? TimeOfDay.now(),
+    );
+    if (picked != null && picked != _selectedTime) {
+      setState(() {
+        _selectedTime = picked;
+        _timeController.text = _selectedTime!.format(context); // Update the text field
+      });
+    }
+  }
+
+  Future<void> pickFile() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      FilePickerResult? pickedFiles = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        //allowMultiple: true, // Allow multiple files to be picked
+        //allowedExtensions: ['png', 'pdf', 'jpeg', 'jpg'],
+      );
+
+      if (pickedFiles != null) {
+        pickedFiles.files.forEach((pickedFile) {
+          _fileNames.add(pickedFile.name);
+          fileToDisplay.add(File(pickedFile.path.toString()));
+        });
+      }
+    } catch (e) {
+      print(e);
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _updateAttachment(String fileType, String url) async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({
+          'query': updateInteractionAttachmentsQuery,
+          'variables': {
+            'interactionId':widget.task['id'],
+            'fileType': fileType,
+            'url': url,
+          },
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('Attachment Updated Successfully');
+        print('Response Body: ${response.body}');
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+      }
+    } catch (error) {
+      print('Error updating attachment: $error');
+    }
+  }
+
+  Future <void> _showAttachmentDialog(BuildContext context)async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: Text('Add Attachment'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (fileToDisplay.isNotEmpty) // Display the selected image if available
+                      Column(
+                        children: [
+                          Image.file(
+                            fileToDisplay.first, // Display the first selected image
+                            width: 300.w, // Adjust the width as needed
+                            height: 300.h, // Adjust the height as needed
+                          ),
+                          SizedBox(height: 10.h),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _fileNames.first,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    fileToDisplay.clear();
+                                    _fileNames.clear();
+                                  });
+                                },
+                                icon: Icon(Icons.delete),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop(); // Close the dialog
+                    await pickFile();
+                    // After pickFile is complete
+                    if (fileToDisplay.isNotEmpty) {
+                      final fileType = _fileNames.first.split('.').last;
+                      const url = 'http://qwerty.com'; // Replace with the actual URL
+                      _updateAttachment(
+                        fileType,
+                        url,
+                      );
+                    }// Call the pickFile() function when the "Add" button is pressed
+                  },
+                  child: Text('Add'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+
   String? selectedTaskStatusType; // Store the selected task status type
 
   @override
@@ -215,45 +395,49 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     for (var provider in serviceProviderTypes) {
       final serviceProviderId = provider['id'] as int;
       final serviceProviderTypeName = provider['service_provider_type']['name'] as String;
+      final serviceProviderTypeId = provider['service_provider_type']['id'];
       if (!distinctServiceProviderTypes.any((item) => item['service_provider_type']['name'] == serviceProviderTypeName)) {
         distinctServiceProviderTypes.add(provider);
       }
     }
+    String dueDate = widget.task['due_date'] ?? '';
+    String dueTime = widget.task['due_time'] ?? '';
+
     return Scaffold(
       extendBodyBehindAppBar: true,
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
+          padding: EdgeInsets.only(bottom: 16.0.h),
           child: Column(
             children: [
               Padding(
-                padding: const EdgeInsets.only(top: 25.0),
+                padding: EdgeInsets.only(top: 25.0.h),
                 child: Row(
                   children: [
                     IconButton(
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      icon: const Padding(
-                        padding: EdgeInsets.only(left: 16.12, top: 16.0),
+                      icon: Padding(
+                        padding: EdgeInsets.only(left: 16.12.w, top: 12.0.h),
                         child: Icon(
                           Icons.close,
-                          size: 32,
+                          size: 32.sp,
                         ),
                       ),
                     ),
                     const Spacer(),
                     Padding(
-                      padding: const EdgeInsets.only(right: 25.0, top: 25.0),
+                      padding: EdgeInsets.only(right: 20.0.w, top: 20.0.h),
                       child: ElevatedButton(
                         onPressed: _updateTask,
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                          padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 22.w),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Update',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 16.sp,
                           ),
                         ),
                       ),
@@ -262,16 +446,16 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.only(left: 16.0, right: 16.0),
+                padding: EdgeInsets.only(left: 16.0.w, right: 16.0.w),
                 child: Column(
                   children: [
                     Container(
                       alignment: Alignment.centerLeft,
-                      padding: const EdgeInsets.only(top: 50.0, bottom: 37.0, left: 20.0),
+                      padding: EdgeInsets.only(top: 30.0.h, bottom: 30.0.h, left: 20.0.w),
                       child: Text(
-                        widget.task['task_title'],
+                        widget.task['task_title']?? 'N/A',
                         style: TextStyle(
-                          fontSize: 24,
+                          fontSize: 22.sp,
                           fontWeight: FontWeight.bold,
                           color: widget.task['task_status_type_id'] == 1
                               ? Color(int.parse('0xFF${widget.task['task_status_type']['color'].substring(1)}'))
@@ -287,50 +471,52 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                             alignment: Alignment.centerLeft,
                             child: Text(
                               memberName,
-                              style: const TextStyle(
-                                fontSize: 16,
+                              style: TextStyle(
+                                fontSize: 14.sp,
                                 color: Color(0xff006bbf),
                               ),
                             ),
                           ),
                       ],
                     )),
-                    const SizedBox(height: 18),
+                    SizedBox(height: 10.h),
                     buildInfoRow('Due Date', TextFormField(
-                      initialValue: formatDueDate(widget.task['due_date']),
+                      controller: _dueDateController,
                       readOnly: true,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      onTap: () {
+                        _selectDate(context); // Function to open date picker
+                      },
+                      style: TextStyle(
+                        fontSize: 14.sp,
                       ),
                       decoration: InputDecoration(
-                        filled: true,
                         fillColor: Colors.grey[300],
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8.0),
-                          borderSide: BorderSide.none,
+                          borderSide: const BorderSide(color: Colors.grey),
                         ),
                       ),
                     )),
                     buildInfoRow('Time', TextFormField(
-                      initialValue: formatTime(widget.task['due_time']),
+                      controller: _timeController,
                       readOnly: true,
-                      style: const TextStyle(
-                        fontSize: 16,
-                      ),
+                      onTap: () async {
+                        await _selectTime(context);
+                      },
                       decoration: InputDecoration(
-                        filled: true,
-                        fillColor: Colors.grey[300],
+                        hintText: 'Select Time',
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8.0),
-                          borderSide: BorderSide.none,
+                          borderSide: const BorderSide(color: Color(0xffd7d7d7)),
                         ),
+                        suffixIcon: const Icon(Icons.access_time), // Show time icon
                       ),
-                    )),
+                    ),),
                     buildInfoRow( 'Assigned by', TextFormField(
                       initialValue: widget.task['user']['name'],
                       readOnly: true,
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                       ),
                       decoration: InputDecoration(
                         filled: true,
@@ -379,12 +565,12 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                         ),
                       ),
                     ),),
-                    buildInfoRow( 'Service Provider', DropdownButtonFormField<int>(
-                      value: null,
+                    buildInfoRow( 'Service \nProvider', DropdownButtonFormField<int>(
+                      value:null,//widget.task['service_provider']['service_provider_type']['id'],
                       items: distinctServiceProviderTypes.map((provider) {
                         final serviceProviderId = provider['id'] as int;
                         final serviceProviderTypeName = provider['service_provider_type']['name'] as String;
-                        //print(widget.task['service_provider_type_id'],);
+                        //print(widget.task['service_provider']['service_provider_type']['id'],);
                         //print(serviceProviderTypeName);
                         //print(provider['service_provider_type_id']);
                         return DropdownMenuItem<int>(
@@ -405,43 +591,38 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                         ),
                       ),
                     ),),
-                    buildInfoRow( 'Add Attachment', Stack(
+                    buildInfoRow('Add \nAttachment', Stack(
                       alignment: Alignment.centerRight,
                       children: [
                         TextFormField(
                           readOnly: true,
-                          style: const TextStyle(
-                            fontSize: 16,
+                          onTap: () async {
+                            _showAttachmentDialog(context);
+                          },
+                          style: TextStyle(
+                            fontSize: 14.sp,
                           ),
                           decoration: InputDecoration(
                             filled: true,
-                            hintText: 'Photos,documents etc..',
-                            fillColor: Colors.grey[300],
+                            hintText: 'Photos, documents etc..',
+                            suffixIcon: Icon(Icons.add),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8.0),
                               borderSide: BorderSide.none,
                             ),
                           ),
                         ),
-                        IconButton(
-                          onPressed: () {
-                            // Handle the add icon button press
-                          },
-                          icon: const Icon(
-                            Icons.add,
-                            color: Colors.grey, // You can adjust the color of the add icon here
-                          ),
-                        ),
                       ],
                     ),),
                     buildInfoRow( 'Add Notes',TextFormField(
                       controller: _notesController, // Attach the TextEditingController
-                      style: const TextStyle(
-                        fontSize: 16,
+                      style: TextStyle(
+                        fontSize: 14.sp,
                       ),
                       maxLines: null, // Allow multiple lines of input
                       decoration: InputDecoration(
                         filled: true,
+                        hintText: 'enter here',
                         fillColor: Colors.white,
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(8.0),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:prayojana_new/drawer_items.dart';
 import '../../services/api_service.dart';
 import 'member_details.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MemberScreen extends StatefulWidget {
   const MemberScreen({Key? key}) : super(key: key);
@@ -109,10 +110,10 @@ class _MemberScreenState extends State<MemberScreen> {
           ),
         ],
         shadowColor: const Color(0xff006bbf),
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(5),
-            bottomRight: Radius.circular(5),
+            bottomLeft: Radius.circular(5.w),
+            bottomRight: Radius.circular(5.w),
           ),
         ),
       ),
@@ -120,56 +121,58 @@ class _MemberScreenState extends State<MemberScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 20.0,bottom: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                OutlinedButton(
-                  onPressed: () {
-                    // Handle button press
-                  },
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32.0),
+            padding: EdgeInsets.only(top: 10.0.h,bottom: 10.h),
+            child: SizedBox(
+              width: ScreenUtil().screenWidth, // Set the width to the screen width
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  OutlinedButton(
+                    onPressed: () {
+                      // Handle button press
+                    },
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(32.0.w),
+                      ),
                     ),
+                    child: const Text('LOCALITY'),
                   ),
-                  child: const Text('LOCALITY'),
-                ),
-                OutlinedButton(
-                  onPressed: () {
-                    // Handle button press
-                  },
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32.0),
+                  OutlinedButton(
+                    onPressed: () {
+                      // Handle button press
+                    },
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(32.0.w),
+                      ),
                     ),
+                    child: const Text('STATUS'),
                   ),
-                  child: const Text('STATUS'),
-                ),
-                OutlinedButton(
-                  onPressed: () {
-                    // Handle button press
-                  },
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32.0),
+                  OutlinedButton(
+                    onPressed: () {
+                      // Handle button press
+                    },
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(32.0.w),
+                      ),
                     ),
+                    child: const Text('PLAN'),
                   ),
-                  child: const Text('PLAN'),
-                ),
-
-                OutlinedButton(
-                  onPressed: () {
-                    // Handle button press
-                  },
-                  style: OutlinedButton.styleFrom(
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(32.0),
+                  OutlinedButton(
+                    onPressed: () {
+                      // Handle button press
+                    },
+                    style: OutlinedButton.styleFrom(
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(32.0.w),
+                      ),
                     ),
+                    child: const Text('CAREBUDDY'),
                   ),
-                  child: const Text('CAREBUDDY'),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const Divider(
@@ -199,15 +202,15 @@ class _MemberScreenState extends State<MemberScreen> {
                 return Column(
                   children: [
                     ListTile(
-                      contentPadding: const EdgeInsets.fromLTRB(60, 12, 16, 12), // Adjust left padding
+                      contentPadding: EdgeInsets.fromLTRB(60.w, 12.h, 16.w, 12.h), // Adjust left padding
                       title: Padding(
-                        padding: const EdgeInsets.only(bottom: 22.0),
+                        padding: EdgeInsets.only(bottom: 15.0.h),
                         child: Row(
                           children: [
                             Text(
                               familyName,
-                              style: const TextStyle(
-                                fontSize: 20,
+                              style: TextStyle(
+                                fontSize: 18.sp,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -220,18 +223,18 @@ class _MemberScreenState extends State<MemberScreen> {
                                 plan['plan'] != null ? plan['plan']['color'] ?? '#000000' : '#000000';
 
                                 return Padding(
-                                  padding: const EdgeInsets.only(left: 8.0),
+                                  padding: EdgeInsets.only(left: 8.0.w),
                                   child: Container(
                                     padding:
-                                    const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0),
+                                     EdgeInsets.symmetric(horizontal: 12.0.w, vertical: 4.0.h),
                                     decoration: BoxDecoration(
                                       color: Color(int.parse(planColor.replaceAll("#", "0xFF"))),
                                       borderRadius: BorderRadius.circular(15.0), // Adjust the radius as needed
                                     ),
                                     child: Text(
                                       planName,
-                                      style: const TextStyle(
-                                        fontSize: 14,
+                                      style: TextStyle(
+                                        fontSize: 10.sp,
                                         fontWeight: FontWeight.w600,
                                       ),
                                     ),
@@ -247,10 +250,10 @@ class _MemberScreenState extends State<MemberScreen> {
                         children: [
                           Text(
                             memberName,
-                            style: const TextStyle(
-                              fontSize: 16,
+                            style:  TextStyle(
+                              fontSize: 14.sp,
                               fontWeight: FontWeight.w500,
-                              color: Color(0xff01508e),
+                              color: const Color(0xff01508e),
                             ),
                           ),
                         ],
@@ -272,3 +275,4 @@ class _MemberScreenState extends State<MemberScreen> {
     );
   }
 }
+

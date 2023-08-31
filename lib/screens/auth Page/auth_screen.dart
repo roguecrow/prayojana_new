@@ -2,9 +2,13 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
+import 'package:loading_indicator/loading_indicator.dart';
 import 'package:prayojana_new/bottom_navigaton.dart';
+import 'package:prayojana_new/firebase_access_token.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -27,7 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   int screenState = 0;
   bool isOtpButtonDisabled = false;
 
-  Color blue = const Color(0xffd1d5db);
+  // blue = const Color(0xffd1d5db);
 
   Future<void> verifyPhone(String number) async {
     setState(() {
@@ -73,8 +77,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         smsCode: otpPin,
       ),
     ).then((authResult) async {
-      bool isTokenVerified = await getFirebaseAccessToken(authResult.user);
-      if (isTokenVerified) {
+      await AccessToken().getFirebaseAccessToken(authResult.user);
+      final apiService = ApiService();
+      var response = await apiService.postBearerToken();
+      if (response.statusCode == 200) {
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => const BottomNavigator(),
@@ -93,25 +99,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
 
-  Future<bool> getFirebaseAccessToken(User? user) async {
-    if (user != null) {
-      String? accessToken = await user.getIdToken();
-
-      if (accessToken != null) {
-        final prefs = await SharedPreferences.getInstance();
-        await prefs.setString('firebaseAccessToken', accessToken);
-
-        final apiService = ApiService();
-        var response = await apiService.postBearerToken();
-        if (response.statusCode == 200) {
-          return true;
-        } else {
-          return false;
-        }
-      }
-    }
-    return false;
-  }
 
   Future<void> registerUserAndVerifyPhone() async {
     try {
@@ -136,9 +123,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
-    screenHeight = MediaQuery.of(context).size.height;
-    screenWidth = MediaQuery.of(context).size.width;
-    bottom = MediaQuery.of(context).viewInsets.bottom;
+    double screenHeight = ScreenUtil().screenHeight;
+    double screenWidth = ScreenUtil().screenWidth;
+    double bottom = ScreenUtil().bottomBarHeight;
+
 
     return WillPopScope(
       onWillPop: () {
@@ -151,7 +139,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         backgroundColor: const Color(0xffd1d5db),
         resizeToAvoidBottomInset: false,
         body: SizedBox(
-          height: screenHeight,
+          height:screenHeight,
           width: screenWidth,
           child: Stack(
             alignment: Alignment.center,
@@ -171,15 +159,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Align(
                 alignment: Alignment.bottomCenter,
                 child: AnimatedContainer(
-                  height: screenHeight / 1.5,
-                  width: screenWidth,
+                  height: ScreenUtil().screenHeight / 1.5,
+                  width: ScreenUtil().screenWidth,
                   duration: const Duration(milliseconds: 800),
                   curve: Curves.fastLinearToSlowEaseIn,
                   child: Padding(
                     padding: EdgeInsets.only(
-                      left: screenWidth / 12,
-                      right: screenWidth / 12,
-                      bottom: screenHeight / 3,
+                      left: ScreenUtil().screenWidth / 12,
+                      right: ScreenUtil().screenWidth / 12,
+                      bottom: ScreenUtil().screenHeight / 3.5,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -188,14 +176,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           "Sign in to your account",
                           style: GoogleFonts.inter(
                             textStyle: Theme.of(context).textTheme.displayLarge,
-                            fontSize: 28,
+                            fontSize: 22.sp,
                             fontWeight: FontWeight.w700,
                             fontStyle: FontStyle.normal,
                             color: const Color(0xff000000),
-                            height: 24 / 22,
+                            height: 18.h / 22.h,
                           ),
                           textAlign: TextAlign.left,
                         ),
+                        const SizedBox(height: 10,),
 
                         screenState == 0 ? stateRegister() : stateOTP(),
                         GestureDetector(
@@ -221,21 +210,48 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               }
                             }
                           },
-                          child: Container(
-                            height: 50,
-                            width: screenWidth,
-                            margin: EdgeInsets.only(bottom: screenHeight / 20),
-                            decoration: BoxDecoration(
-                              color: isVerifyingOTP ? Colors.grey : const Color(0xff006bbf),
-                              borderRadius: BorderRadius.circular(6),
+                          child: ElevatedButton(
+                            onPressed: isVerifyingOTP
+                                ? null
+                                : () {
+                              if (screenState == 0) {
+                                if (phoneController.text.isEmpty) {
+                                  showSnackBarText("Phone number is still empty!");
+                                } else {
+                                  if (countryDial == "+1") {
+                                    showSnackBarText("Please select a country code.");
+                                    return;
+                                  } else {
+                                    registerUserAndVerifyPhone();
+                                  }
+                                }
+                              } else {
+                                if (otpPin.length >= 6) {
+                                  verifyOTP();
+                                } else {
+                                  showSnackBarText("Enter OTP correctly!");
+                                }
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xff006bbf),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                              fixedSize: Size(screenWidth, ScreenUtil().setHeight(40)),
                             ),
-                            child: Center(
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 10.0),
                               child: isVerifyingOTP
-                                  ? const CircularProgressIndicator(color: Colors.white)
+                                  ? const LoadingIndicator(
+                                  indicatorType: Indicator.ballPulse, /// Required, The loading type of the widget
+                                  colors: [Color(0xff006bbf)],       /// Optional, The color collections
+                                  //strokeWidth: 2,                     /// Optional, The stroke of the line, only applicable to widget which contains line
+                                  //backgroundColor: Colors.black,      /// Optional, Background of the widget
+                                  //pathBackgroundColor: Colors.black   /// Optional, the stroke backgroundColor
+                                )
                                   : Text(
                                 screenState == 0 ? "Get OTP" : "Verify Account",
                                 style: GoogleFonts.inter(
-                                  fontSize: 16,
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.w500,
                                   color: Colors.white,
                                 ),
@@ -244,13 +260,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           ),
                         ),
+                        SizedBox(height: 20.h,),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             Text(
                               "Are you a new customer? ",
                               style: GoogleFonts.inter(
-                                fontSize: 16,
+                                fontSize: 16.sp,
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
@@ -261,7 +278,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               child: Text(
                                 "Sign Up",
                                 style: GoogleFonts.inter(
-                                  fontSize: 16,
+                                  fontSize: 16.sp,
                                   fontWeight: FontWeight.w500,
                                   color: const Color(0xff008fff),
                                 ),
@@ -300,14 +317,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
         Text(
           "Phone number",
           style: GoogleFonts.inter(
-            fontSize: 14,
+            fontSize: 14.sp,
             fontWeight: FontWeight.w500,
             color: const Color(0xff374151),
-            height: 20 / 14,
+            height: 20.h /14.h,
           ),
           textAlign: TextAlign.left,
         ),
-        const SizedBox(height: 8,),
+        SizedBox(height: 8.h),
         IntlPhoneField(
           controller: phoneController,
           showCountryFlag: false,
@@ -318,15 +335,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
               countryDial = "+" + phone.countryCode;
             });
           },
-          decoration: const InputDecoration(
-            border: OutlineInputBorder(
+          decoration: InputDecoration(
+            border: const OutlineInputBorder(
               borderSide: BorderSide(color: Color(0xff6b7280)),
             ),
-            focusedBorder: OutlineInputBorder(
+            focusedBorder: const OutlineInputBorder(
               borderSide: BorderSide(color: Color(0xff6b7280)),
             ),
             contentPadding: EdgeInsets.symmetric(
-              horizontal: 16,
+              horizontal:  ScreenUtil().setWidth(16),
+              vertical: 14.h,
             ),
             counterText: "",
             hintText: "+1 (555) 987-6543",
@@ -340,18 +358,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SizedBox(height: 20),
+        SizedBox(height: 20.h),
         Text(
           "OTP",
           style: GoogleFonts.inter(
-            fontSize: 14,
+            fontSize: 14.sp,
             fontWeight: FontWeight.w500,
             color: const Color(0xff374151),
-            height: 20 / 14,
+            height: 20.h / 14.h,
           ),
           textAlign: TextAlign.left,
         ),
-        const SizedBox(height: 8,),
+        SizedBox(height: 8.h,),
         Stack(
           children: [
             TextField(
@@ -368,8 +386,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
             ),
             Positioned(
-              right: 16,
-              top: 20,
+              right: ScreenUtil().setWidth(16), // Use ScreenUtil().setWidth() for the right position
+              top: ScreenUtil().setHeight(14), // Use ScreenUtil().setHeight() for the top position
               child: TweenAnimationBuilder<Duration>(
                 duration: const Duration(minutes: 1),
                 tween: Tween(begin: const Duration(minutes: 1), end: Duration.zero),
@@ -382,10 +400,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   return Text(
                     '$minutes:$seconds',
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Color(0xff6b7280),
+                    style:TextStyle(
+                      color: const Color(0xff6b7280),
                       fontWeight: FontWeight.w400,
-                      fontSize: 16,
+                      fontSize: 16.sp,
                     ),
                   );
                 },
@@ -393,6 +411,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
           ],
         ),
+        SizedBox(height: 8.h),
         RichText(
           text: TextSpan(
             children: [
@@ -406,10 +425,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   child: Text(
                     "Change Phone number",
                     style: GoogleFonts.inter(
-                      fontSize: 16,
+                      fontSize: 16.sp,
                       fontWeight: FontWeight.w500,
                       color: const Color(0xff4287bd),
-                      height: 3,
+                      //height: 3.h,
                     ),
                   ),
                 ),
@@ -417,15 +436,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: 8.h),
       ],
     );
   }
 
   Widget circle(double size) {
     return Container(
-      height: screenHeight / size,
-      width: screenHeight / size,
+      height: ScreenUtil().screenHeight / size, // Use ScreenUtil().screenHeight for height
+      width: ScreenUtil().screenHeight / size, // Use ScreenUtil().screenHeight for width
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         color: Colors.white,
@@ -433,3 +452,4 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
+

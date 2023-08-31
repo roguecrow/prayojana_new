@@ -1,10 +1,14 @@
 //in here member drop down field used down below
 
 import 'dart:convert';
+import 'dart:io';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import '../../constants.dart';
+import '../../graphql_queries.dart';
 import '../../services/api_service.dart';
 import 'package:dropdown_button2/dropdown_button2.dart';
 
@@ -15,43 +19,50 @@ class Member {
   Member({required this.id, required this.name});
 }
 
-Future<List<Member>> fetchMembers() async {
-  String accessToken = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjYzODBlZjEyZjk1ZjkxNmNhZDdhNGNlMzg4ZDJjMmMzYzIzMDJmZGUiLCJ0eXAiOiJKV1QifQ.eyJodHRwczovL2hhc3VyYS5pby9qd3QvY2xhaW1zIjp7IngtaGFzdXJhLWFsbG93ZWQtcm9sZXMiOlsidXNlciJdLCJ4LWhhc3VyYS1kZWZhdWx0LXJvbGUiOiJ1c2VyIiwieC1oYXN1cmEtYWRtaW4iOiJ0cnVlIn0sImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9wcmF5b2phbmEtZmEwN2IiLCJhdWQiOiJwcmF5b2phbmEtZmEwN2IiLCJhdXRoX3RpbWUiOjE2OTI3ODgyMzMsInVzZXJfaWQiOiI0dE9zR01mVnFNZDYxeW15allDY2NSS0JockcyIiwic3ViIjoiNHRPc0dNZlZxTWQ2MXlteWpZQ2NjUktCaHJHMiIsImlhdCI6MTY5Mjc4ODIzMywiZXhwIjoxNjkyNzkxODMzLCJwaG9uZV9udW1iZXIiOiIrOTE5Njc3MzkwOTY1IiwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJwaG9uZSI6WyIrOTE5Njc3MzkwOTY1Il19LCJzaWduX2luX3Byb3ZpZGVyIjoicGhvbmUifX0.QDBqgWv3FdnLqawtmsJMMAOk04Ql4GqMES-MNVsldwkAlaCe9RbhQRNt3rlJ32gU0rBVSliABGACepEwJWMGA42YpvwGyfm4XgcSoz4IgtNjHwYyjqI-rXGvXklBhhWmQVammwmyDUfSUW41cELxv0muy42dRBpX39-EcrCAV4DoHXKE4Fw0tZTL1b3nQnWIpd7H7WuxnwW9X0IFdykGRnnAOOGNImvVDzQV0gS5q4mP-oIQe2UwYf4JnmHUkJTLXmPdJTQykfzTr6oHV3oKTgEBIVeSzxD96I0gy6loOJ9ZgYUVjkiXbPt4-uCW0WYaFpir_aopKmX740MfLdXlVQ';
-    final Map<String, String> headers = {
-    'Content-Type': ApiConstants.contentType,
-    'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
-    'x-hasura-admin-secret': ApiConstants.adminSecret,
-    'Authorization': 'Bearer $accessToken',
-    // Add other headers if needed
-  };
 
-  final http.Response response = await http.get(Uri.parse(ApiConstants.carebuddyMembersUrl), headers: headers);
 
-  if (response.statusCode == 200) {
-    final Map<String, dynamic> responseData = json.decode(response.body);
-    final List<dynamic> memberData = responseData['memberData'] ?? [];
+// Future<List<Member>> fetchMembers() async {
+//   String accessToken = 'eyJhbGciOiJSUzI1NiIsImtpZCI6IjYzODBlZjEyZjk1ZjkxNmNhZDdhNGNlMzg4ZDJjMmMzYzIzMDJmZGUiLCJ0eXAiOiJKV1QifQ.eyJodHRwczovL2hhc3VyYS5pby9qd3QvY2xhaW1zIjp7IngtaGFzdXJhLWFsbG93ZWQtcm9sZXMiOlsidXNlciJdLCJ4LWhhc3VyYS1kZWZhdWx0LXJvbGUiOiJ1c2VyIiwieC1oYXN1cmEtYWRtaW4iOiJ0cnVlIn0sImlzcyI6Imh0dHBzOi8vc2VjdXJldG9rZW4uZ29vZ2xlLmNvbS9wcmF5b2phbmEtZmEwN2IiLCJhdWQiOiJwcmF5b2phbmEtZmEwN2IiLCJhdXRoX3RpbWUiOjE2OTI3ODgyMzMsInVzZXJfaWQiOiI0dE9zR01mVnFNZDYxeW15allDY2NSS0JockcyIiwic3ViIjoiNHRPc0dNZlZxTWQ2MXlteWpZQ2NjUktCaHJHMiIsImlhdCI6MTY5Mjc4ODIzMywiZXhwIjoxNjkyNzkxODMzLCJwaG9uZV9udW1iZXIiOiIrOTE5Njc3MzkwOTY1IiwiZmlyZWJhc2UiOnsiaWRlbnRpdGllcyI6eyJwaG9uZSI6WyIrOTE5Njc3MzkwOTY1Il19LCJzaWduX2luX3Byb3ZpZGVyIjoicGhvbmUifX0.QDBqgWv3FdnLqawtmsJMMAOk04Ql4GqMES-MNVsldwkAlaCe9RbhQRNt3rlJ32gU0rBVSliABGACepEwJWMGA42YpvwGyfm4XgcSoz4IgtNjHwYyjqI-rXGvXklBhhWmQVammwmyDUfSUW41cELxv0muy42dRBpX39-EcrCAV4DoHXKE4Fw0tZTL1b3nQnWIpd7H7WuxnwW9X0IFdykGRnnAOOGNImvVDzQV0gS5q4mP-oIQe2UwYf4JnmHUkJTLXmPdJTQykfzTr6oHV3oKTgEBIVeSzxD96I0gy6loOJ9ZgYUVjkiXbPt4-uCW0WYaFpir_aopKmX740MfLdXlVQ';
+//     final Map<String, String> headers = {
+//     'Content-Type': ApiConstants.contentType,
+//     'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+//     'x-hasura-admin-secret': ApiConstants.adminSecret,
+//     'Authorization': 'Bearer $accessToken',
+//     // Add other headers if needed
+//   };
+//
+//   final http.Response response = await http.get(Uri.parse(ApiConstants.carebuddyMembersUrl), headers: headers);
+//
+//   if (response.statusCode == 200) {
+//     final Map<String, dynamic> responseData = json.decode(response.body);
+//     final List<dynamic> memberData = responseData['memberData'] ?? [];
+//
+//     List<Member> members = memberData.map<Member>((member) {
+//       return Member(
+//         id: member['id'] as int,
+//         name: member['name'] as String,
+//       );
+//     }).toList();
+//
+//     return members;
+//   } else {
+//     print('Error fetching members: ${response.reasonPhrase}');
+//     return [];
+//   }
+// }
 
-    List<Member> members = memberData.map<Member>((member) {
-      return Member(
-        id: member['id'] as int,
-        name: member['name'] as String,
-      );
-    }).toList();
 
-    return members;
-  } else {
-    print('Error fetching members: ${response.reasonPhrase}');
-    return [];
-  }
-}
 
 
 class CreateTask extends StatefulWidget {
-  const CreateTask({Key? key}) : super(key: key);
+  final int? memberId; // Add the memberId parameter
+
+  const CreateTask({Key? key, this.memberId}) : super(key: key);
 
   @override
   State<CreateTask> createState() => _CreateTaskState();
 }
+
 
 class _CreateTaskState extends State<CreateTask> {
   final TextEditingController _taskTitleController = TextEditingController();
@@ -68,6 +79,14 @@ class _CreateTaskState extends State<CreateTask> {
   TimeOfDay? _selectedTime;
   int? serviceProviderTypeId;
   int? serviceProviderId;
+  int taskStatusTypeId = 1;
+  late int careBuddyId;
+  int createdBy = 8;
+  bool isLoading = false;
+  FilePickerResult? result;
+  PlatformFile? pickedfile;
+  List<String> _fileNames = [];
+  List<File> fileToDisplay = [];
 
   @override
   void initState() {
@@ -76,8 +95,49 @@ class _CreateTaskState extends State<CreateTask> {
     _fetchServiceProviderTypes();
   }
 
+  Future<List<Member>> getAllMembers() async {
+    String accessToken = await getFirebaseAccessToken();
+    var headers = {
+      'Content-Type': ApiConstants.contentType,
+      'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+      'x-hasura-admin-secret': ApiConstants.adminSecret,
+      'Authorization': 'Bearer $accessToken',
+    };
+
+    var request = http.Request(
+      'POST',
+      Uri.parse(ApiConstants.memberListUrl),
+    );
+
+    request.headers.addAll(headers);
+
+    http.StreamedResponse response = await request.send();
+
+    if (response.statusCode == 200) {
+      String responseString = await response.stream.bytesToString();
+      Map<String, dynamic> responseData = json.decode(responseString);
+      List<dynamic>? memberData = responseData['memberData'];
+      careBuddyId = responseData['user_id'];
+      print(careBuddyId);
+
+      if (memberData != null) {
+        List<Member> allMembers = memberData.map((member) {
+          return Member(id: member['id'], name: member['name']);
+        }).toList();
+        print(allMembers);
+        return allMembers;
+      } else {
+        print('List Empty');
+        return [];
+      }
+    } else {
+      print('API Error: ${response.reasonPhrase}');
+      return [];
+    }
+  }
+
   Future<void> _fetchAvailableMembers() async {
-    List<Member> availableMembers = await fetchMembers();
+    List<Member> availableMembers = await getAllMembers();
     setState(() {
       _availableMembers = availableMembers;
     });
@@ -85,7 +145,6 @@ class _CreateTaskState extends State<CreateTask> {
       print('Available Member: ${member.name}');
     }
   }
-
 
   void _handleMemberSelection(Member selectedMember) {
     // Handle the selected member
@@ -153,6 +212,191 @@ class _CreateTaskState extends State<CreateTask> {
     }
   }
 
+  Future<void> _insertTask() async {
+    print(careBuddyId);
+    String accessToken = await getFirebaseAccessToken();
+    var headers = {
+      'Content-Type': ApiConstants.contentType,
+      'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+      'x-hasura-admin-secret': ApiConstants.adminSecret,
+      'Authorization': 'Bearer $accessToken',
+    };
+
+    var request = http.Request(
+      'POST',
+      Uri.parse(ApiConstants.graphqlUrl),
+    );
+
+    String graphQLMutation = '''
+  {
+    "query": "mutation MyMutation{ insert_task_members(objects: {task: { data: { carebuddy_id: $careBuddyId, task_title: \\"${_taskTitleController.text}\\", task_notes: \\"${_notesController.text}\\", service_provider_id: $serviceProviderId, task_status_type_id: 1, created_by: $careBuddyId, task_attachements: {data: {file_type: \\"pdf\\", url: \\"http://cggvbhbbn\\"}}, due_date: \\"${_dueDateController.text}\\", due_time: \\"${_timeController.text}\\" } }, member_id: ${_selectedMember!.id} })
+    { returning 
+    { 
+    task 
+    { carebuddy_id 
+    task_title
+    task_notes
+    interaction_id
+    service_provider_id
+    task_status_type_id
+    created_by
+    user{ name 
+    }
+    task_attachements 
+    { 
+    file_type
+    url
+    task_id
+    } 
+    id 
+    due_date
+    due_time
+    task_status_type
+    { name 
+    } 
+    service_provider 
+    {
+    name 
+    service_provider_type_id 
+    service_provider_type
+    { 
+    name
+    } 
+    } 
+    } 
+    member_id 
+    member 
+    {
+    name
+    }
+    }
+    }
+    }",
+    "variables": {}
+  }
+''';
+
+
+    request.body = graphQLMutation;
+    request.headers.addAll(headers);
+
+    http.StreamedResponse response = await request.send();
+
+    if (response.statusCode == 200) {
+      String responseString = await response.stream.bytesToString();
+      Map<String, dynamic> responseData = json.decode(responseString);
+      print('Inserted Task Data: $responseData');
+      Navigator.pop(context, true);// Print the inserted task data
+      // Perform any necessary UI updates or navigation here
+    } else {
+      print('API Error: ${response.reasonPhrase}');
+      // Handle error scenario here
+    }
+  }
+
+  Future<void> pickFile() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      FilePickerResult? pickedFiles = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        //allowMultiple: true, // Allow multiple files to be picked
+        //allowedExtensions: ['png', 'pdf', 'jpeg', 'jpg'],
+      );
+
+      if (pickedFiles != null) {
+        pickedFiles.files.forEach((pickedFile) {
+          _fileNames.add(pickedFile.name);
+          fileToDisplay.add(File(pickedFile.path.toString()));
+        });
+      }
+    } catch (e) {
+      print(e);
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+
+
+  Future <void> _showAttachmentDialog(BuildContext context)async {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: const Text('Add Attachment'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (fileToDisplay.isNotEmpty) // Display the selected image if available
+                      Column(
+                        children: [
+                          Image.file(
+                            fileToDisplay.first, // Display the first selected image
+                            width: 300.w, // Adjust the width as needed
+                            height: 300.h, // Adjust the height as needed
+                          ),
+                          SizedBox(height: 10.h),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  _fileNames.first,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    fileToDisplay.clear();
+                                    _fileNames.clear();
+                                  });
+                                },
+                                icon: const Icon(Icons.delete),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop(); // Close the dialog
+                  },
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () async {
+                    Navigator.of(context).pop(); // Close the dialog
+                    await pickFile();
+                    // After pickFile is complete
+                    if (fileToDisplay.isNotEmpty) {
+                      final fileType = _fileNames.first.split('.').last;
+                      const url = 'http://qwerty.com'; // Replace with the actual URL
+                    }// Call the pickFile() function when the "Add" button is pressed
+                  },
+                  child: const Text('Add'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+
 
   @override
   void dispose() {
@@ -186,26 +430,28 @@ class _CreateTaskState extends State<CreateTask> {
                       onPressed: () {
                         Navigator.pop(context);
                       },
-                      icon: const Padding(
-                        padding: EdgeInsets.only(left: 16.12, top: 16.0),
+                      icon: Padding(
+                        padding: EdgeInsets.only(left: 16.12.w, top: 12.0.h),
                         child: Icon(
                           Icons.close,
-                          size: 32,
+                          size: 32.sp,
                         ),
                       ),
                     ),
                     const Spacer(),
                     Padding(
-                      padding: const EdgeInsets.only(right: 25.0, top: 25.0),
+                      padding: EdgeInsets.only(right: 20.0.w, top: 20.0.h),
                       child: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          _insertTask();
+                        },
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+                          padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 22.w),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Done',
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 16.sp,
                           ),
                         ),
                       ),
@@ -214,16 +460,20 @@ class _CreateTaskState extends State<CreateTask> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40),
+                padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 40.h),
                 child: TextFormField(
                   controller: _taskTitleController,
-                  decoration: const InputDecoration(
+                  decoration: InputDecoration(
                     hintText: 'Task Title',
-                    hintStyle: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-                    enabledBorder: UnderlineInputBorder(
+                    hintStyle: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w600 ,
+                        color: const Color(0xff999999)
+                    ),
+                    enabledBorder: const UnderlineInputBorder(
                       borderSide: BorderSide(color: Colors.grey),
                     ),
-                    focusedBorder: UnderlineInputBorder(
+                    focusedBorder: const UnderlineInputBorder(
                       borderSide: BorderSide(color: Colors.blue),
                     ),
                   ),
@@ -252,15 +502,15 @@ class _CreateTaskState extends State<CreateTask> {
               //     }).toList(),
               //   ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                padding: EdgeInsets.symmetric(horizontal: 20.0.w),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     InputDecorator(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         //labelText: 'Select Member*',
-                        labelStyle: TextStyle(fontSize: 18),
-                        border: UnderlineInputBorder(
+                        labelStyle: TextStyle(fontSize: 16.sp),
+                        border: const UnderlineInputBorder(
                           borderSide: BorderSide(color: Colors.grey),
                         ),
                       ),
@@ -284,8 +534,8 @@ class _CreateTaskState extends State<CreateTask> {
                             );
                           }).toList(),
                           dropdownStyleData: DropdownStyleData(
-                            maxHeight: 300,
-                            width: 300,
+                            maxHeight: 250.h,
+                            width: 250.w,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(14),
                               color: Colors.white,
@@ -296,10 +546,14 @@ class _CreateTaskState extends State<CreateTask> {
                               return Align(
                                 alignment: Alignment.centerLeft,
                                 child: Chip(
+                                  backgroundColor: Color(0xffe1f2ff),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(8.0), // Adjust the radius to make it more squared
+                                  ),
                                   label: Text(
                                     member.name,
                                     style: const TextStyle(
-                                      color: Colors.blue, // Customize the color as needed
+                                      color: Color(0xff374151),// Customize the color as needed
                                     ),
                                   ),
                                   // onDeleted: () {
@@ -318,7 +572,7 @@ class _CreateTaskState extends State<CreateTask> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+                padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 20.0.h),
                 child: TextFormField(
                   controller: _dueDateController,
                   readOnly: true,
@@ -339,7 +593,7 @@ class _CreateTaskState extends State<CreateTask> {
               ),
 
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20.0),
+                padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 10.0.h),
                 child: TextFormField(
                   controller: _timeController,
                   readOnly: true,
@@ -358,17 +612,17 @@ class _CreateTaskState extends State<CreateTask> {
                   ),
                 ),
               ),
-              const SizedBox(height: 30.0,),
+              SizedBox(height: 20.0.h,),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 10.0.h),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     InputDecorator(
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         //labelText: 'Service Provider*',
-                        labelStyle: TextStyle(fontSize: 18),
-                        border: UnderlineInputBorder(
+                        labelStyle: TextStyle(fontSize: 18.sp),
+                        border: const UnderlineInputBorder(
                           borderSide: BorderSide(color: Colors.grey),
                         ),
                       ),
@@ -392,8 +646,8 @@ class _CreateTaskState extends State<CreateTask> {
                             );
                           }).toList(),
                           dropdownStyleData: DropdownStyleData(
-                            maxHeight: 300,
-                            width: 300,
+                            maxHeight: 300.h,
+                            width: 300.w,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(14),
                               color: Colors.white,
@@ -417,47 +671,8 @@ class _CreateTaskState extends State<CreateTask> {
                   ],
                 ),
               ),
-              // Padding(
-              //   padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-              //   child: DropdownButtonFormField<int>(
-              //     value: serviceProviderId,
-              //     items: distinctServiceProviderTypes.map((provider) {
-              //       final serviceProviderId = provider['id'] as int;
-              //       final serviceProviderTypeName =
-              //       provider['service_provider_type']['name'] as String;
-              //       return DropdownMenuItem<int>(
-              //         value: serviceProviderId,
-              //         child: Text(serviceProviderTypeName),
-              //       );
-              //     }).toList(),
-              //     onChanged: (newValue) {
-              //       setState(() {
-              //         serviceProviderId = newValue;
-              //       });
-              //     },
-              //     decoration: const InputDecoration(
-              //       labelText: 'Service Provider*',
-              //       labelStyle: TextStyle(fontSize: 18),
-              //       border: UnderlineInputBorder(
-              //         borderSide: BorderSide(color: Colors.grey),
-              //       ),
-              //     ),
-              //     selectedItemBuilder: (BuildContext context) {
-              //       return distinctServiceProviderTypes.map<Widget>((provider) {
-              //         final serviceProviderTypeName =
-              //         provider['service_provider_type']['name'] as String;
-              //         return Align(
-              //           alignment: Alignment.centerLeft,
-              //           child:Text(
-              //               serviceProviderTypeName,
-              //             ),
-              //         );
-              //       }).toList();
-              //     },
-              //   ),
-              // ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 10.0.h),
                 child: TextFormField(
                   controller: _notesController,
                   decoration: const InputDecoration(
@@ -472,8 +687,12 @@ class _CreateTaskState extends State<CreateTask> {
                 ),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
+                padding: EdgeInsets.symmetric(horizontal: 20.0.w, vertical: 10.0.h),
                 child: TextFormField(
+                  readOnly: true,
+                  onTap: () async {
+                    _showAttachmentDialog(context);
+                  },
                   decoration: const InputDecoration(
                     labelText: 'Add an Attachment',
                     enabledBorder: UnderlineInputBorder(
@@ -492,8 +711,5 @@ class _CreateTaskState extends State<CreateTask> {
     );
   }
 }
-
-
-
 
 
