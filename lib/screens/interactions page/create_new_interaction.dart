@@ -1,5 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
+import 'package:graphql/client.dart';
+import 'package:http/http.dart' as http;
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -132,6 +135,28 @@ class _CreateInteractionState extends State<CreateInteraction> {
     }
   }
 
+  Future<void> uploadFile(String path) async {
+    var url = 'https://s3.ap-south-1.amazonaws.com/prayojana.attachments/Attachments';
+    var request = http.MultipartRequest('POST', Uri.parse(url));
+
+    File file = File(path);
+    List<int> bytes = await file.readAsBytes();
+    http.MultipartFile multipartFile = http.MultipartFile.fromBytes('file', bytes, filename: 'file.jpg');
+
+    request.files.add(multipartFile);
+    request.fields.addAll({'key': path.split('/').last, 'acl': 'public-read'});
+
+    var response = await http.Client().send(request);
+
+    if (response.statusCode == 200) {
+      print('File uploaded successfully!');
+    } else {
+      print('Error uploading file. Status code: ${response.statusCode}');
+    }
+  }
+
+
+
   Future<void> pickFile() async {
     try {
       setState(() {
@@ -148,6 +173,7 @@ class _CreateInteractionState extends State<CreateInteraction> {
         pickedFiles.files.forEach((pickedFile) {
           _fileNames.add(pickedFile.name);
           fileToDisplay.add(File(pickedFile.path.toString()));
+          uploadFile(pickedFile.path.toString());
         });
       }
     } catch (e) {
@@ -608,7 +634,7 @@ class _CreateInteractionState extends State<CreateInteraction> {
                   _selectDate(context); // Function to open date picker
                 },
                 style: TextStyle(
-                  fontSize: 16.sp,
+                  fontSize: 14.sp,
                 ),
                 decoration: InputDecoration(
                   //fillColor: Colors.grey[300],
@@ -764,6 +790,7 @@ class _CreateInteractionState extends State<CreateInteraction> {
           ),
         ),
       ),
+
     );
   }
 }

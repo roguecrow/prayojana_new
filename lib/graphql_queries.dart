@@ -332,5 +332,41 @@ const String getInteractionQuery = '''
     }
   ''';
 
+const String insertInChatSummaries = '''
+      mutation MyMutation(\$memberId: Int!, \$notes: String!, \$interactionId: Int!) {
+        insert_member_summaries(objects: {
+          member_id: \$memberId,
+          notes: \$notes,
+          interaction_id: \$interactionId
+        }) {
+          affected_rows
+          returning {
+            id
+            interaction_id
+            member_id
+            notes
+          }
+        }
+      }
+    ''';
+
+const String insertTaskChatSummaries = '''
+      mutation MyMutation(\$memberId: Int!, \$notes: String!, \$taskId: Int!) {
+        insert_member_summaries(objects: {
+          member_id: \$memberId,
+          notes: \$notes,
+          task_id: \$taskId
+        }) {
+          affected_rows
+          returning {
+            id
+            task_id
+            member_id
+            notes
+          }
+        }
+      }
+    ''';
+
 
 

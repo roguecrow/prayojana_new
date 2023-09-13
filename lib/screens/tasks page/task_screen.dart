@@ -207,6 +207,7 @@ class _TaskScreenState extends State<TaskScreen> {
                         ),
                         onTap: () {
                           _navigateToTaskDetailsScreen(task);
+                          print('clicked task : $task');
                         },
                       ),
                     );

@@ -63,6 +63,27 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+//    flavorDimensions += "default"
+//    productFlavors {
+//        dev {
+//            // Assigns this product flavor to the "version" flavor dimension.
+//            // If you are using only one dimension, this property is optional,
+//            // and the plugin automatically assigns all the module's flavors to
+//            // that dimension.
+//            dimension = "default"
+//            applicationIdSuffix = ".dev"
+//            resValue "string", "app_name", "prayojana-dev"
+//        }
+//        stage {
+//            dimension = "default"
+//            applicationIdSuffix = ".stage"
+//            resValue "string", "app_name", "prayojana-stage"
+//        }
+//        prod {
+//            dimension = "default"
+//            resValue "string", "app_name", "prayojana"
+//        }
+//    }
 }
 
 flutter {

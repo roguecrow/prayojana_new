@@ -10,6 +10,7 @@ import '../../graphql_queries.dart';
 import '../../services/api_service.dart';
 import 'package:file_picker/file_picker.dart';
 
+import '../../summaries_chat.dart';
 import '../tasks page/create_new_task.dart';
 
 class InteractionDetailsScreen extends StatefulWidget {
@@ -190,7 +191,7 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title: Text('Add Attachment'),
+              title: const Text('Add Attachment'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -220,7 +221,7 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                                     _fileNames.clear();
                                   });
                                 },
-                                icon: Icon(Icons.delete),
+                                icon: const Icon(Icons.delete),
                               ),
                             ],
                           ),
@@ -234,7 +235,7 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                   onPressed: () {
                     Navigator.of(context).pop(); // Close the dialog
                   },
-                  child: Text('Cancel'),
+                  child: const Text('Cancel'),
                 ),
                 TextButton(
                   onPressed: () async {
@@ -250,7 +251,7 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                       );
                     }// Call the pickFile() function when the "Add" button is pressed
                   },
-                  child: Text('Add'),
+                  child: const Text('Add'),
                 ),
               ],
             );
@@ -388,6 +389,19 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
   String? selectedInteractionType;
   String? selectedInteractionStatusType;
 
+  void _openChatPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SummariesChatPage(
+          selectedInteractionMember: widget.selectedInteractionMember,
+          selectedTaskMember: {}, // Pass an empty map as selectedTaskMember
+        ),
+      ),
+    );
+  }
+
+
+
   @override
   Widget build(BuildContext context) {
    // final selectedInteractionMember = widget.selectedInteractionMember;
@@ -460,7 +474,7 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                               memberName,
                               style: TextStyle(
                                 fontSize: 14.sp,
-                                color: Color(0xff006bbf),
+                                color: const Color(0xff006bbf),
                               ),
                             ),
                           ),
@@ -497,6 +511,7 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                           borderRadius: BorderRadius.circular(8.0),
                           borderSide: const BorderSide(color: Colors.grey),
                         ),
+                        suffixIcon: const Icon(Icons.calendar_month),
                       ),
                     )),
                     buildInfoRow( 'Type', DropdownButtonFormField<int>(
@@ -607,7 +622,7 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                           decoration: InputDecoration(
                             filled: true,
                             hintText: 'Photos, documents etc..',
-                            suffixIcon: Icon(Icons.add),
+                            suffixIcon: const Icon(Icons.add),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(8.0),
                               borderSide: BorderSide.none,
@@ -670,6 +685,13 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          _openChatPage();
+        },
+        label: const Text('Summaries'),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Set the button size
       ),
     );
   }

@@ -21,9 +21,7 @@ class ApiService {
         'x-hasura-admin-secret': ApiConstants.adminSecret,
       };
       var body = json.encode({
-        "input": {
           "mobileNumber": phoneNumber,
-        },
       });
 
       var response = await http.post(url, headers: headers, body: body);
@@ -183,6 +181,37 @@ class Taskapi{
       return response;
     } catch (error) {
       throw Exception('Failed to perform mutation: $error');
+    }
+  }
+}
+
+class InteractionApi {
+
+  Future<List<dynamic>> fetchDataTypes() async {
+    String accessToken = await getFirebaseAccessToken();
+    final Map<String, String> headers = {
+      'Hasura-Client-Name': 'hasura-console',
+      'x-hasura-admin-secret': 'myadminsecret',
+      'content-type': 'application/json',
+      'Authorization': 'Bearer $accessToken',
+    };
+    String url = ApiConstants.interactionUrl;
+
+    final http.Response response = await http.post(
+      Uri.parse(url),
+      headers: headers,
+    );
+
+    if (response.statusCode == 200) {
+      final Map<String, dynamic> responseData = json.decode(response.body);
+      List<dynamic> fetchedInteractionMembers = responseData['interactionMembersData'];
+
+      print('fetchedInteractionMembers: $fetchedInteractionMembers'); // Add this line
+
+      return fetchedInteractionMembers;
+    } else {
+      print('Error fetching data: ${response.reasonPhrase}');
+      return []; // Return an empty list in case of an error
     }
   }
 

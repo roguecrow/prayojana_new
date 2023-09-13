@@ -33,6 +33,41 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   // blue = const Color(0xffd1d5db);
 
+  void showTopAlert(BuildContext context, String message) {
+    OverlayEntry overlayEntry;
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: 0,
+        left: 0,
+        right: 0,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: EdgeInsets.all(8.0),
+            color: Colors.blue,
+            child: Center(
+              child: Text(
+                message,
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Overlay.of(context).insert(overlayEntry);
+
+    Future.delayed(Duration(seconds: 3), () {
+      overlayEntry.remove();
+    });
+  }
+
+// Usage
+
+
+
   Future<void> verifyPhone(String number) async {
     setState(() {
       isOtpButtonDisabled = true;
@@ -45,7 +80,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
         showSnackBarText("Auth Completed!");
       },
       verificationFailed: (FirebaseAuthException e) {
-        showSnackBarText("Auth Failed!");
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('Verification Failed'),
+              content: const Text('Quota Exceeded. Please try again after sometime!'),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('OK'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
+            );
+          },
+        );
       },
       codeSent: (String verificationId, int? resendToken) {
         showSnackBarText("OTP Sent!");

@@ -10,6 +10,7 @@ import 'dart:convert';
 import '../../constants.dart';
 import '../../graphql_queries.dart';
 import '../../services/api_service.dart';
+import '../../summaries_chat.dart';
 
 class TaskDetailsScreen extends StatefulWidget {
   final dynamic task;
@@ -386,6 +387,17 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     );
   }
 
+  void _openChatPage() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SummariesChatPage(
+          selectedInteractionMember: {},
+          selectedTaskMember: widget.task, // Pass an empty map as selectedTaskMember
+        ),
+      ),
+    );
+  }
+
 
   String? selectedTaskStatusType; // Store the selected task status type
 
@@ -400,8 +412,6 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         distinctServiceProviderTypes.add(provider);
       }
     }
-    String dueDate = widget.task['due_date'] ?? '';
-    String dueTime = widget.task['due_time'] ?? '';
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -495,6 +505,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                           borderRadius: BorderRadius.circular(8.0),
                           borderSide: const BorderSide(color: Colors.grey),
                         ),
+                        suffixIcon: const Icon(Icons.calendar_month),
                       ),
                     )),
                     buildInfoRow('Time', TextFormField(
@@ -637,6 +648,13 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
             ],
           ),
         ),
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          _openChatPage();
+        },
+        label: const Text('Summaries'),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Set the button size
       ),
     );
   }

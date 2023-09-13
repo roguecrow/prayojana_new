@@ -18,43 +18,52 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
   }
 
   class _InteractionScreenState extends State<InteractionScreen> {
-
+    final scrollController = ScrollController();
+    bool isLoadingMore =false;
+    int page = 1;
 
     @override
     void initState() {
       super.initState();
-      fetchDataTypes();
+      _updateState();
     }
     List<dynamic> interactionMembers = [];
-    Future<void> fetchDataTypes() async {
-      String accessToken = await getFirebaseAccessToken();
-      final Map<String, String> headers = {
-        'Hasura-Client-Name': 'hasura-console',
-        'x-hasura-admin-secret': 'myadminsecret',
-        'content-type': 'application/json',
-        'Authorization': 'Bearer $accessToken',
-      };
-      String url = ApiConstants.interactionUrl;
 
-      final http.Response response = await http.post(
-        Uri.parse(url),
-        headers: headers,
-      );
-
-      if (response.statusCode == 200) {
-        final Map<String, dynamic> responseData = json.decode(response.body);
-        List<dynamic> fetchedInteractionMembers = responseData['interactionMembersData'];
-
-        print('fetchedInteractionMembers: $fetchedInteractionMembers'); // Add this line
-
-        setState(() {
-          interactionMembers = fetchedInteractionMembers;
-        });
-      } else {
-        print('Error fetching data: ${response.reasonPhrase}');
-      }
-
+    Future<void> _updateState() async {
+      List<dynamic> fetchedData = await InteractionApi().fetchDataTypes();
+      setState(() {
+        interactionMembers = fetchedData;
+      });
     }
+
+    // Future<void> fetchDataTypes() async {
+    //   String accessToken = await getFirebaseAccessToken();
+    //   final Map<String, String> headers = {
+    //     'Hasura-Client-Name': 'hasura-console',
+    //     'x-hasura-admin-secret': 'myadminsecret',
+    //     'content-type': 'application/json',
+    //     'Authorization': 'Bearer $accessToken',
+    //   };
+    //   String url = ApiConstants.interactionUrl;
+    //
+    //   final http.Response response = await http.post(
+    //     Uri.parse(url),
+    //     headers: headers,
+    //   );
+    //
+    //   if (response.statusCode == 200) {
+    //     final Map<String, dynamic> responseData = json.decode(response.body);
+    //     List<dynamic> fetchedInteractionMembers = responseData['interactionMembersData'];
+    //
+    //     print('fetchedInteractionMembers: $fetchedInteractionMembers'); // Add this line
+    //
+    //     setState(() {
+    //       interactionMembers =  fetchedInteractionMembers;
+    //     });
+    //   } else {
+    //     print('Error fetching data: ${response.reasonPhrase}');
+    //   }
+    // }
 
 
 
@@ -187,7 +196,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
               child: interactionMembers.isEmpty
                   ? const Center(child: CircularProgressIndicator())
                   : ListView.separated(
-                itemCount: interactionMembers.length,
+                itemCount:  interactionMembers.length,
                 separatorBuilder: (context, index) => const Divider(
                   endIndent: 20,
                   indent: 20,
@@ -195,40 +204,45 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
                   color: Colors.grey,
                 ),
                 itemBuilder: (context, index) {
-                  final interactionMember = interactionMembers[index];
-                  final title = interactionMember['interaction']['title'];
-                  final date = interactionMember['interaction']['interaction_date'];
-                  //print('interaction details :$interactionMember');
+                  if(index < interactionMembers.length){
+                    final interactionMember = interactionMembers[index];
+                    final title = interactionMember['interaction']['title'];
+                    final date = interactionMember['interaction']['interaction_date'];
+                    //print('interaction details :$interactionMember');
 
-                  return SizedBox(
-                    height: 60.h,
-                    child: ListTile(
-                      contentPadding: const EdgeInsets.fromLTRB(30, 12, 16, 12),
-                      title: Padding(
-                        padding: EdgeInsets.only(bottom: 8.0.h),
-                        child: Text(
-                          title ?? 'N/A',
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.w600,
+                    return SizedBox(
+                      height: 60.h,
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.fromLTRB(30, 12, 16, 12),
+                        title: Padding(
+                          padding: EdgeInsets.only(bottom: 8.0.h),
+                          child: Text(
+                            title ?? 'N/A',
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w600,
+                            ),
                           ),
                         ),
-                      ),
-                      subtitle: Padding(
-                        padding: EdgeInsets.only(top: 10.0.h),
-                        child: Text(
-                          formatDueDate(date) ?? 'N/A',
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            fontWeight: FontWeight.w400,
+                        subtitle: Padding(
+                          padding: EdgeInsets.only(top: 10.0.h),
+                          child: Text(
+                            formatDueDate(date) ?? 'N/A',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
                         ),
+                        onTap: () {
+                          _navigateToInteractionDetailsScreen(interactionMember); // Pass the selected interaction data
+                        },
                       ),
-                      onTap: () {
-                        _navigateToInteractionDetailsScreen(interactionMember); // Pass the selected interaction data
-                      },
-                    ),
-                  );
+                    );
+                  }
+                  else{
+                    return const Center(child: CircularProgressIndicator(),);
+                  }
                 },
               ),
             ),
@@ -254,10 +268,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
           ),
         ),
       );
-
-      if (shouldUpdate == true) {
-        fetchDataTypes();
-      }
+      _updateState();
     }
 
     void _navigateToCreateInteractionScreen() async {
@@ -267,8 +278,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
       );
       if (shouldCreate == true) {
         // Refresh the task data after updating
-        fetchDataTypes();
+        _updateState();
       }
     }
   }
-
