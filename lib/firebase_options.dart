@@ -17,10 +17,7 @@ import 'package:flutter/foundation.dart'
 class DefaultFirebaseOptions {
   static FirebaseOptions get currentPlatform {
     if (kIsWeb) {
-      throw UnsupportedError(
-        'DefaultFirebaseOptions have not been configured for web - '
-        'you can reconfigure this by running the FlutterFire CLI again.',
-      );
+      return web;
     }
     switch (defaultTargetPlatform) {
       case TargetPlatform.android:
@@ -28,10 +25,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.iOS:
         return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for windows - '
@@ -49,21 +43,39 @@ class DefaultFirebaseOptions {
     }
   }
 
+  static const FirebaseOptions web = FirebaseOptions(
+    apiKey: 'AIzaSyBSa3pooOWOld4Cejh626rpnYeH8sKo1kk',
+    appId: '1:172940963011:web:bc185ebfcad18928b3c676',
+    messagingSenderId: '172940963011',
+    projectId: 'prayojana-stage',
+    authDomain: 'prayojana-stage.firebaseapp.com',
+    storageBucket: 'prayojana-stage.appspot.com',
+    measurementId: 'G-4L83N7LS3L',
+  );
+
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyB22cas1-X_iMXRhmCVeCstORQaEN9Dh2E',
-    appId: '1:759450326852:android:d71fc4732a1713b335e911',
-    messagingSenderId: '759450326852',
-    projectId: 'prayojana-fa07b',
-    storageBucket: 'prayojana-fa07b.appspot.com',
+    apiKey: 'AIzaSyCeQKEmgNP-pE8epBsNcc4EOdrfX1u9Cv4',
+    appId: '1:172940963011:android:044af85c172219b4b3c676',
+    messagingSenderId: '172940963011',
+    projectId: 'prayojana-stage',
+    storageBucket: 'prayojana-stage.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyCKU6VXrxtsJtW2v3C1uUYt30aIBECr120',
-    appId: '1:759450326852:ios:258fac6b81a72b5f35e911',
-    messagingSenderId: '759450326852',
-    projectId: 'prayojana-fa07b',
-    storageBucket: 'prayojana-fa07b.appspot.com',
-    iosClientId: '759450326852-q6qaefucbrnk0gveh1g4cfd74sjv556r.apps.googleusercontent.com',
+    apiKey: 'AIzaSyAwh4ZKA4IAQGtpqf0xFlEJuoielsKcrEI',
+    appId: '1:172940963011:ios:1ad19ff9d215f1eeb3c676',
+    messagingSenderId: '172940963011',
+    projectId: 'prayojana-stage',
+    storageBucket: 'prayojana-stage.appspot.com',
+    iosBundleId: 'com.example.prayojanaNew',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyAwh4ZKA4IAQGtpqf0xFlEJuoielsKcrEI',
+    appId: '1:172940963011:ios:1ad19ff9d215f1eeb3c676',
+    messagingSenderId: '172940963011',
+    projectId: 'prayojana-stage',
+    storageBucket: 'prayojana-stage.appspot.com',
     iosBundleId: 'com.example.prayojanaNew',
   );
 }

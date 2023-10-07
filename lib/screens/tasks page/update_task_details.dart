@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
@@ -91,7 +92,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
 
   Future<void> _updateTask() async {
     String accessToken = await getFirebaseAccessToken();
-    if (selectedTaskStatusTypeId == null) {
+    if (selectedTaskStatusTypeId == null || serviceProviderId == null) {
       // Display an error message
       // ignore: use_build_context_synchronously
       showDialog(
@@ -99,7 +100,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
         builder: (BuildContext context) {
           return AlertDialog(
             title: Text('Error'),
-            content: Text('Please select a task status type before updating.'),
+            content: const Text('Please select all fields before updating.'),
             actions: [
               TextButton(
                 onPressed: () {
@@ -308,9 +309,24 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     } catch (error) {
       print('Error updating attachment: $error');
     }
+
   }
 
-  Future <void> _showAttachmentDialog(BuildContext context)async {
+
+  Future<void> pickImageFromCamera() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      setState(() {
+        fileToDisplay.add(File(pickedFile.path));
+      });
+    }
+  }
+
+
+
+  Future<void> _showAttachmentDialog(BuildContext context) async {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -333,13 +349,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                           SizedBox(height: 10.h),
                           Row(
                             children: [
-                              Expanded(
-                                child: Text(
-                                  _fileNames.first,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              if (_fileNames.isNotEmpty) // Add this condition
+                                Expanded(
+                                  child: Text(
+                                    _fileNames.first,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
                               IconButton(
                                 onPressed: () {
                                   setState(() {
@@ -357,27 +374,48 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                 ),
               ),
               actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
-                  },
-                  child: Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    Navigator.of(context).pop(); // Close the dialog
-                    await pickFile();
-                    // After pickFile is complete
-                    if (fileToDisplay.isNotEmpty) {
-                      final fileType = _fileNames.first.split('.').last;
-                      const url = 'http://qwerty.com'; // Replace with the actual URL
-                      _updateAttachment(
-                        fileType,
-                        url,
-                      );
-                    }// Call the pickFile() function when the "Add" button is pressed
-                  },
-                  child: Text('Add'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      child: Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.of(context).pop(); // Close the dialog
+                        await pickImageFromCamera();
+                        // After pickImageFromCamera is complete
+                        if (fileToDisplay.isNotEmpty) {
+                          final fileType = _fileNames.first.split('.').last;
+                          const url = 'http://qwerty.com'; // Replace with the actual URL
+                          await _updateAttachment(
+                            fileType,
+                            url,
+                          );
+                        }
+                      },
+                      child: Text('Camera'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.of(context).pop(); // Close the dialog
+                        await pickFile();
+                        // After pickFile is complete
+                        if (fileToDisplay.isNotEmpty) {
+                          final fileType = _fileNames.first.split('.').last;
+                          const url = 'http://qwerty.com'; // Replace with the actual URL
+                          _updateAttachment(
+                            fileType,
+                            url,
+                          );
+                        }
+                      },
+                      child: Text('Add'),
+                    ),
+                  ],
                 ),
               ],
             );
@@ -577,6 +615,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                       ),
                     ),),
                     buildInfoRow( 'Service \nProvider', DropdownButtonFormField<int>(
+                      hint: Text(widget.task['service_provider']['service_provider_type']['name'],style: TextStyle(fontWeight: FontWeight.normal),),
                       value:null,//widget.task['service_provider']['service_provider_type']['id'],
                       items: distinctServiceProviderTypes.map((provider) {
                         final serviceProviderId = provider['id'] as int;
@@ -594,6 +633,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                           serviceProviderId = newValue;
                         });
                       },
+
                       decoration: InputDecoration(
                         filled: true,
                         border: OutlineInputBorder(

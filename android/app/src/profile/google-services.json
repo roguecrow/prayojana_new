@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "172940963011",
+    "project_id": "prayojana-stage",
+    "storage_bucket": "prayojana-stage.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:172940963011:android:044af85c172219b4b3c676",
+        "android_client_info": {
+          "package_name": "com.example.prayojana_new"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCeQKEmgNP-pE8epBsNcc4EOdrfX1u9Cv4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

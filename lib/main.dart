@@ -11,7 +11,9 @@ import 'screens/auth Page/auth_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await Firebase.initializeApp(
+      name: 'Prayojana',
+      options: DefaultFirebaseOptions.currentPlatform);
   await FirebaseApi().initNotification();
   runApp(const MyApp());
 }
@@ -33,7 +35,7 @@ class _MyAppState extends State<MyApp> {
       minTextAdapt: true,
       builder: (BuildContext context, Widget? widget) {
         return MaterialApp(
-          title: 'Your App Title',
+          title: 'Prayojana',
           theme: ThemeData(
             textTheme: GoogleFonts.interTextTheme(
               Theme.of(context).textTheme,

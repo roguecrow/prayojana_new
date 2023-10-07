@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:prayojana_new/drawer_items.dart';
+import '../../member_drawer.dart';
 import '../../services/api_service.dart';
-import 'member_details.dart';
+import 'member details/member profile/member_profile.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class MemberScreen extends StatefulWidget {
@@ -18,7 +19,7 @@ class _MemberScreenState extends State<MemberScreen> {
     final updatedMember = await Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => MemberDetails(member: member),
+        builder: (context) => MemberDrawer(member: member), // Pass the member data here
       ),
     );
 
@@ -31,6 +32,7 @@ class _MemberScreenState extends State<MemberScreen> {
       }
     }
   }
+
 
   Future<void> openFilterDialog() async {
     showDialog(
@@ -57,6 +59,13 @@ class _MemberScreenState extends State<MemberScreen> {
     super.initState();
     fetchMembersData();
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    fetchMembersData(); // Fetch data every time the screen is viewed
+  }
+
 
   Future<void> fetchMembersData() async {
     MemberApi memberApi = MemberApi();

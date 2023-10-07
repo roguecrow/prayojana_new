@@ -44,41 +44,148 @@ var graphQLQuery = jsonEncode(
 }
 ''', 'variables': {}});
 
-const String combinedMutation = r'''
-  mutation UpdateMemberDetailsAndNotes(
-    $id: Int!,
-    $name: String!,
+const String updateMemberDetails = r'''
+  mutation UpdateMemberDetails(
+    $memberId: Int!,
+    $newName: String!,
+    $emergencyPhoneNumber: String!,
+    $medicalHistory: String!,
+    $salutation: String!,
+    $gender: String!,
+    $dob: String!,
     $phone: String!,
-    $interactionNotes: String!,
-    $taskNotes: String!,
-    $taskId: Int,           
-    $interactionId: Int   
+    $whatsapp: String!,
+    $email: String!,
+    $landline: String!,
+    $alternateNumber: String!,
+    $zip: String!,
+    $address1: String!,
+    $address2: String!,
+    $address3: String!,
+    $area: String!,
+    $city: String!,
+    $state: String!,
+    $location: String!,
+    $bloodGroup: String!,
+    $vitacuroId: String!,
+    $dependencies: String!
   ) {
-    update_members_by_pk(
-      pk_columns: { id: $id },
+    update_members(
+      where: {id: {_eq: $memberId}},
       _set: {
-        name: $name,
-        phone: $phone
+        name: $newName,
+        emergency_phone_number: $emergencyPhoneNumber,
+        medical_history: $medicalHistory,
+        salutation: $salutation,
+        gender: $gender,
+        dob: $dob,
+        phone: $phone,
+        whatsapp: $whatsapp,
+        email: $email,
+        landline: $landline,
+        alternate_number: $alternateNumber,
+        zip: $zip,
+        address1: $address1,
+        address2: $address2,
+        address3: $address3,
+        area: $area,
+        city: $city,
+        state: $state,
+        location: $location,
+        blood_group: $bloodGroup,
+        vitacuro_id: $vitacuroId,
+        dependencies: $dependencies
       }
     ) {
-      id
-      name
-      phone
-    }
-    update_task_by_pk(
-      pk_columns: { id: $taskId }
-      _set: { task_notes: $taskNotes }
-    ) {
-      task_notes
-    }
-    update_interaction_by_pk(
-      pk_columns: { id: $interactionId }
-      _set: { notes: $interactionNotes }
-    ) {
-      notes
+      returning {
+        name
+        emergency_phone_number
+        medical_history
+        dob
+        gender
+        salutation
+        phone
+        whatsapp
+        email
+        landline
+        alternate_number
+        zip
+        address1
+        address2
+        address3
+        area
+        city
+        state
+        location
+        blood_group
+        vitacuro_id
+        dependencies
+      }
     }
   }
 ''';
+
+const String updateMemberInsurancesDetails = r'''
+  mutation UpdateMemberInsurances(
+    $agentNumber: String!,
+    $agentName: String!,
+    $insurer: String!,
+    $policyNumber: String!,
+    $validTill: String!,
+    $memberId: Int!
+  ) {
+    update_member_insurances(
+      _set: {
+        agent_number: $agentNumber,
+        agent_name: $agentName,
+        insurer: $insurer,
+        policy_number: $policyNumber,
+        valid_till: $validTill
+      },
+      where: {member_id: {_eq: $memberId}}
+    ) {
+      affected_rows
+      returning {
+        agent_name
+        agent_number
+        insurer
+        policy_number
+        valid_till
+      }
+    }
+  }
+''';
+
+
+const String updateMemberHealthDetails = r'''
+mutation UpdateMemberDetails(
+    $memberId: Int!,
+    $dob: String!,
+    $medicalHistory: String!,
+    $bloodGroup: String!,
+    $vitacuroId: String!,
+  ) {
+    update_members(
+      where: {id: {_eq: $memberId}},
+      _set: {
+        medical_history: $medicalHistory,
+        dob: $dob,
+        blood_group: $bloodGroup,
+        vitacuro_id: $vitacuroId,
+      }
+    ) {
+      returning {
+        medical_history
+        dob
+        blood_group
+        vitacuro_id
+      }
+    }
+  }
+''';
+
+
+
 
 const String getTaskQuery = r'''
   query MyQuery {
@@ -367,6 +474,316 @@ const String insertTaskChatSummaries = '''
         }
       }
     ''';
+
+const String getInterestTypes = '''
+query MyQuery {
+  interest_types {
+    id
+    name
+    is_active
+    position
+  }
+}
+''';
+
+
+
+const String getPlans = '''
+ query MyQuery {
+  plans {
+    id
+    color
+    name
+    position
+  }
+}
+''';
+
+
+String getMemberQuery(int id) {
+  return '''
+    query MyQuery {
+      members(where: {id: {_eq: $id}}) {
+        id
+        name
+        salutation
+        gender
+        dob
+        medical_history
+        phone
+        whatsapp
+        email
+        landline
+        alternate_number
+        emergency_phone_number
+        zip
+        address1
+        address2
+        address3
+        area
+        city
+        state
+        location
+        blood_group
+        dependencies
+        vitacuro_id
+        note1
+        note2
+        member_carebuddies {
+          user {
+            name
+          }
+        }
+        member_assistances {
+          alternate_number
+          phone
+        }
+        client_members {
+          relationship
+          client {
+            id
+            family_name
+            name
+            prid
+            client_plans {
+              plan {
+                id
+                name
+                color
+              }
+            }
+            client_members {
+              client_id
+              relationship
+              client {
+                client_plans {
+                  plan {
+                    id
+                    name
+                    color
+                  }
+                }
+              }
+              member {
+                name
+                dob
+                gender
+                location
+              }
+            }
+          }
+        }
+      }
+    }
+  ''';
+  }
+String getMemberHealthQuery(int id) {
+  return '''
+    query MyQuery {
+          members(where: { id: { _eq: $id } }) {
+            id
+            name
+            dob
+            blood_group
+            medical_history
+            vitacuro_id
+            member_insurances {
+              id
+              insurer
+              policy_number
+              valid_till
+              agent_number
+              agent_name
+              member_insurance_images {
+                id
+                name
+              }
+            }
+            member_medical_centers {
+              medical_center {
+                name
+                phone
+                address
+                medical_center_type {
+                  name
+                }
+              }
+            }
+            member_doctors {
+              doctor {
+                name
+                mobile_number
+                notes
+                doctor_addresses {
+                  address
+                }
+              }
+            }
+          }
+        }
+  ''';
+}
+
+String getMemberNotesQuery(int id) {
+  return '''
+    query MyQuery {
+  members(where: { id: { _eq: $id } }) {
+    name
+    id
+    interaction_members {
+      interaction {
+        id
+        title
+        interaction_date
+        interaction_time
+        member_summaries {
+          notes
+        }
+        interaction_status_type {
+          name
+        }
+      }
+    }
+    task_members {
+      task {
+        id
+        task_title
+        due_date
+        due_time
+        member_summaries {
+          notes
+        }
+        task_status_type {
+          name
+        }
+      }
+    }
+  }
+}
+
+  ''';
+}
+
+String getMemberAssistanceQuery(int id) {
+  return '''
+  query MyQuery {
+  members(where: {id: {_eq: $id }}) {
+    id
+    name
+    member_assistances(order_by: {id: asc}) {
+      name
+      member_id
+      id
+      is_emergency
+      is_proxy_access
+      location
+      phone
+      relation
+    }
+  }
+}
+  ''';
+}
+
+String getMemberDocumentsQuery(int id) {
+  return '''
+query MyQuery {
+  member_documents(where: {member_id: {_eq: $id }}) {
+    id
+    image
+    member_id
+    name
+    type
+  }
+}
+  ''';
+}
+
+String getPrayojanaProfileQuery(int id) {
+  return '''
+    query MyQuery {
+      members(where: { id: { _eq: $id } }) {
+        id
+        name
+        salutation
+        gender
+        dob
+        member_carebuddies {
+          user {
+            name
+          }
+        }
+        client_members {
+          client {
+            id
+            name
+            salutation
+            gender
+            dob
+            prid
+            family_name
+            client_statuses {
+              client_status_type {
+                name
+              }
+            }
+            client_plan_histories {
+              start_date
+              end_date
+              plan {
+                id
+                name
+                color
+              }
+              plan_amount
+              amount_paid
+              payment_date
+              link
+              payment_type
+              payment_id
+            }
+          }
+        }
+      }
+    }
+  ''';
+}
+
+String getMemberInterestQuery(int id) {
+  return '''
+query MyQuery {
+  members(where: {id: {_eq: $id}}) {
+    id
+    name
+    interests(order_by: {id: asc},  where: { is_active: { _eq: true } }) {
+      id
+      is_active
+      interest_type_id
+      interest_type {
+        name
+      }
+    }
+  }
+}
+  ''';
+}
+
+const String updateMemberInterestDetails = r'''
+mutation UpdateInterest($id: Int!, $isActive: Boolean!) {
+  update_interests(
+    where: {id: {_eq: $id}},
+    _set: {is_active: $isActive}
+  ) {
+    affected_rows
+    returning {
+      id
+      is_active
+    }
+  }
+}
+''';
+
+
 
 
 

@@ -132,6 +132,260 @@ class MemberApi {
       return null;
     }
   }
+
+  Future<List<dynamic>?> fetchMemberDetails(int memberId) async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({'query': getMemberQuery(memberId)}), // Use the getMemberQuery function
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> members = List<Map<String, dynamic>>.from(data['data']['members']);
+        return members;
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching member details: $error');
+      return null;
+    }
+  }
+
+  Future<List<dynamic>?> fetchMemberHealthDetails(int memberId) async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({'query': getMemberHealthQuery(memberId)}), // Use the getMemberQuery function
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> membersHealth = List<Map<String, dynamic>>.from(data['data']['members']);
+        return membersHealth;
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching member details: $error');
+      return null;
+    }
+  }
+
+  Future<List<dynamic>?> fetchMemberNotesDetails(int memberId) async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({'query': getMemberNotesQuery(memberId)}), // Use the getMemberQuery function
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> membersNotes = List<Map<String, dynamic>>.from(data['data']['members']);
+        return membersNotes;
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching member details: $error');
+      return null;
+    }
+  }
+
+  Future<List<dynamic>?> fetchMemberAssistanceDetails(int memberId) async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({'query': getMemberAssistanceQuery(memberId)}), // Use the getMemberQuery function
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> membersAssistance = List<Map<String, dynamic>>.from(data['data']['members']);
+        return membersAssistance;
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching member details: $error');
+      return null;
+    }
+  }
+
+  Future<List<dynamic>?> fetchMemberDocumentsDetails(int memberId) async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({'query': getMemberDocumentsQuery(memberId)}), // Use the getMemberQuery function
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> membersDocuments = List<Map<String, dynamic>>.from(data['data']['member_documents']);
+        return membersDocuments;
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching member details: $error');
+      return null;
+    }
+  }
+
+  Future<List<dynamic>?> fetchMemberPrayojanaProfileDetails(int memberId) async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({'query': getPrayojanaProfileQuery(memberId)}), // Use the getMemberQuery function
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> membersPrayojanaProfile = List<Map<String, dynamic>>.from(data['data']['members']);
+        return membersPrayojanaProfile;
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching member details: $error');
+      return null;
+    }
+  }
+
+  Future<List<dynamic>?> fetchMemberInterestDetails(int memberId) async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({'query': getMemberInterestQuery(memberId)}), // Use the getMemberQuery function
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> membersInterest = List<Map<String, dynamic>>.from(data['data']['members']);
+        return membersInterest;
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching member details: $error');
+      return null;
+    }
+  }
+
+  Future<List<dynamic>> fetchInterestDetails() async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({'query': getInterestTypes}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> interest = data['data']['interest_types'];
+        return interest;
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return [];
+      }
+    } catch (error) {
+      print('Error fetching member details: $error');
+      return [];
+    }
+  }
+
+
+
+  Future<List<dynamic>?> fetchPlans() async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({'query': getPlans}), // Use the getPlans query
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> plans = data['data']['plans'];
+        return plans;
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching plans: $error');
+      return null;
+    }
+  }
 }
 
 class Taskapi{
@@ -214,7 +468,40 @@ class InteractionApi {
       return []; // Return an empty list in case of an error
     }
   }
+}
 
+class FCMMessaging {
+
+  static Future<http.Response> postFCMToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? storedFCMToken = prefs.getString('FCMToken');
+
+    try {
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.fcmUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+        },
+        body: jsonEncode({
+          'registrationToken': storedFCMToken,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print('FCM Token sent: $storedFCMToken');
+        print(response.body);
+      } else {
+        print('Failed to send FCM Token. Status code: ${response.statusCode}');
+      }
+
+      return response;
+    } catch (error) {
+      print('Error fetching service provider types: $error');
+      throw error;
+    }
+  }
 }
 
 

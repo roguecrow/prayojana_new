@@ -59,6 +59,9 @@ dependencies:
   flutter_speed_dial: ^7.0.0
   firebase_messaging: ^14.4.1
   flutter_local_notifications: ^14.0.0+1
+  foundation_flutter: ^0.2.0
+  image_picker: ^1.0.4
+  flutter_slidable: ^3.0.0
 
 dev_dependencies:
   flutter_test:

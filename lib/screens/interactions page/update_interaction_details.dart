@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../constants.dart';
@@ -182,16 +183,27 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
   }
 
 
+  Future<void> pickImageFromCamera() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      setState(() {
+        fileToDisplay.add(File(pickedFile.path));
+      });
+    }
+  }
 
 
- Future <void> _showAttachmentDialog(BuildContext context)async {
+
+  Future<void> _showAttachmentDialog(BuildContext context) async {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title: const Text('Add Attachment'),
+              title: Text('Add Attachment'),
               content: SingleChildScrollView(
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -207,13 +219,14 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                           SizedBox(height: 10.h),
                           Row(
                             children: [
-                              Expanded(
-                                child: Text(
-                                  _fileNames.first,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                              if (_fileNames.isNotEmpty) // Add this condition
+                                Expanded(
+                                  child: Text(
+                                    _fileNames.first,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
-                              ),
                               IconButton(
                                 onPressed: () {
                                   setState(() {
@@ -221,7 +234,7 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                                     _fileNames.clear();
                                   });
                                 },
-                                icon: const Icon(Icons.delete),
+                                icon: Icon(Icons.delete),
                               ),
                             ],
                           ),
@@ -231,27 +244,48 @@ class _InteractionDetailsScreenState extends State<InteractionDetailsScreen> {
                 ),
               ),
               actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // Close the dialog
-                  },
-                  child: const Text('Cancel'),
-                ),
-                TextButton(
-                  onPressed: () async {
-                    Navigator.of(context).pop(); // Close the dialog
-                    await pickFile();
-                    // After pickFile is complete
-                    if (fileToDisplay.isNotEmpty) {
-                      final fileType = _fileNames.first.split('.').last;
-                      const url = 'http://qwerty.com'; // Replace with the actual URL
-                      _updateAttachment(
-                        fileType,
-                        url,
-                      );
-                    }// Call the pickFile() function when the "Add" button is pressed
-                  },
-                  child: const Text('Add'),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).pop(); // Close the dialog
+                      },
+                      child: Text('Cancel'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.of(context).pop(); // Close the dialog
+                        await pickImageFromCamera();
+                        // After pickImageFromCamera is complete
+                        if (fileToDisplay.isNotEmpty) {
+                          final fileType = _fileNames.first.split('.').last;
+                          const url = 'http://qwerty.com'; // Replace with the actual URL
+                          await _updateAttachment(
+                            fileType,
+                            url,
+                          );
+                        }
+                      },
+                      child: Text('Camera'),
+                    ),
+                    TextButton(
+                      onPressed: () async {
+                        Navigator.of(context).pop(); // Close the dialog
+                        await pickFile();
+                        // After pickFile is complete
+                        if (fileToDisplay.isNotEmpty) {
+                          final fileType = _fileNames.first.split('.').last;
+                          const url = 'http://qwerty.com'; // Replace with the actual URL
+                          _updateAttachment(
+                            fileType,
+                            url,
+                          );
+                        }
+                      },
+                      child: Text('Add'),
+                    ),
+                  ],
                 ),
               ],
             );

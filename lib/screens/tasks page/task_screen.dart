@@ -245,10 +245,7 @@ class _TaskScreenState extends State<TaskScreen> {
       MaterialPageRoute(builder: (context) => TaskDetailsScreen(task: task)),
     );
 
-    if (shouldUpdate == true) {
-      // Refresh the task data after updating
       fetchTaskData();
-    }
   }
   void _navigateToCreateTaskScreen() async {
     final shouldCreate= await Navigator.push(

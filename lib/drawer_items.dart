@@ -7,32 +7,7 @@ class DrawerItem {
 
   DrawerItem({required this.icon, required this.title, required this.onTap});
 }
-// void _fetchServiceProviderTypes() async {
-  //   try {
-  //     final http.Response response = await http.post(
-  //       Uri.parse(ApiConstants.graphqlUrl),
-  //       headers: {
-  //         'Content-Type': ApiConstants.contentType,
-  //         'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
-  //         'x-hasura-admin-secret': ApiConstants.adminSecret,
-  //       },
-  //       body: jsonEncode({
-  //         'query': getServiceProviderTypesQuery,
-  //       }),
-  //     );
-  //
-  //     if (response.statusCode == 200) {
-  //       final data = jsonDecode(response.body);
-  //       setState(() {
-  //         serviceProviderTypes = data['data']['service_provider_type'];
-  //       });
-  //     } else {
-  //       print('API Error: ${response.reasonPhrase}');
-  //     }
-  //   } catch (error) {
-  //     print('Error fetching service provider types: $error');
-  //   }
-  // }
+
 class AppDrawer extends StatelessWidget {
   final List<DrawerItem> drawerItems;
   const AppDrawer({super.key, required this.drawerItems});
