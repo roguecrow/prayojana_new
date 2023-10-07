@@ -30,6 +30,10 @@ class _MemberInterestState extends State<MemberInterest> {
   int selectedInterestTypeId = -1; // Initialize with -1 to represent no selection
   List<Map<String, dynamic>> interestTypes = []; // List to store interest types\
   List<dynamic>? fetchedInterestTypes = [];
+  List<int> selectedInterestIds = []; // Step 1: Initialize the list
+  List<int> deletedInterestTypeIds = [];
+
+
 
   @override
   void initState() {
@@ -67,34 +71,21 @@ class _MemberInterestState extends State<MemberInterest> {
   }
 
 
-
   void _showUndoSnackBar(BuildContext context, dynamic interest, int index, int memberId) {
     final snackBar = SnackBar(
       content: Text("Interest deleted"),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10), // Adjust the border radius as needed
-      ),
-      margin: EdgeInsets.all(10), // Adjust the margin as needed
-      behavior: SnackBarBehavior.floating, // Makes the snackbar float above the bottom
-      duration: Duration(seconds: 2), // Adjust the duration as needed
-      animation: _snackBarFadeAnimation(), // Use a custom animation
       action: SnackBarAction(
         label: 'Undo',
         onPressed: () {
           // Undo action
-          _insertMemberInterestDetails(interest['interest_type_id'], memberId);
+          deletedInterestTypeIds.add(interest['interest_type_id']);
+          _insertMemberInterestDetails(deletedInterestTypeIds, memberId);
         },
       ),
     );
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
-  Animation<double> _snackBarFadeAnimation() {
-    return CurvedAnimation(
-      parent: const AlwaysStoppedAnimation(1),
-      curve: Curves.easeOut, // Adjust the curve as needed
-    );
-  }
 
 
 
@@ -165,7 +156,7 @@ class _MemberInterestState extends State<MemberInterest> {
   }
 
 
-  Future<void> _insertMemberInterestDetails(int interestTypeId , int memberId) async {
+  Future<void> _insertMemberInterestDetails(List<int> interestTypeIds, int memberId) async {
     String accessToken = await getFirebaseAccessToken();
 
     final http.Response response = await http.post(
@@ -176,23 +167,21 @@ class _MemberInterestState extends State<MemberInterest> {
         'x-hasura-admin-secret': ApiConstants.adminSecret,
         'Authorization': 'Bearer $accessToken',
       },
-      body: jsonEncode(<String, dynamic> {
+      body: jsonEncode(<String, dynamic>{
         'query': r'''
-        mutation MyMutation($interestTypeId: Int!, $memberId: Int!) {
-          insert_interests(objects: {interest_type_id: $interestTypeId, is_active: true, member_id: $memberId}) {
+        mutation InsertInterests($interests: [interests_insert_input!]!) {
+          insert_interests(objects: $interests) {
             affected_rows
             returning {
               id
               interest_type_id
-              is_active
               member_id
             }
           }
         }
       ''',
         'variables': {
-          'interestTypeId': interestTypeId,
-          'memberId': memberId,
+          'interests': interestTypeIds.map((id) => {'interest_type_id': id, 'is_active': true, 'member_id': memberId}).toList(),
         },
       }),
     );
@@ -209,8 +198,8 @@ class _MemberInterestState extends State<MemberInterest> {
 
         // Update the local data with the new member data here if needed
 
-        // Pop the screen and return the updated member data
         _fetchMemberInterestDetails();
+        interestTypeIds.clear();
       } else {
         String responseString = response.body;
         print('Response from Server: $responseString'); // Add this line
@@ -258,25 +247,25 @@ class _MemberInterestState extends State<MemberInterest> {
                   subtitle: Text(interest['interest_type']['name'] ?? 'N/A'),
                 ),
                 const SizedBox(height: 20),
-                // Row(
-                //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                //   children: [
-                //     ElevatedButton(
-                //       onPressed: () {
-                //         Navigator.pop(context);
-                //       },
-                //       child: const Text('Cancel'),
-                //     ),
-                //     ElevatedButton(
-                //       onPressed: () async {
-                //         isActive = false;
-                //         await _updateMemberInterestDetails(interestId);
-                //         Navigator.pop(context);
-                //       },
-                //       child: const Text('Delete'),
-                //     ),
-                //   ],
-                // ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () async {
+                        isActive = false;
+                        await _updateMemberInterestDetails(interestId);
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Delete'),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -284,6 +273,7 @@ class _MemberInterestState extends State<MemberInterest> {
       },
     );
   }
+
 
   void _insertInterestType() {
     showModalBottomSheet(
@@ -294,90 +284,113 @@ class _MemberInterestState extends State<MemberInterest> {
         ),
       ),
       builder: (BuildContext context) {
-        return Container(
-          height: ScreenUtil().screenHeight / 1.5.h,
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Create Interest',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-              const Divider(
-                height: 30.0,
-                thickness: 1,
-              ),
-              selectedInterestTypeId != null
-                  ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                margin: const EdgeInsets.only(bottom: 8),
-                decoration: BoxDecoration(
-                  color: Colors.blue,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      fetchedInterestTypes
-                          ?.firstWhere(
-                            (type) => type['id'] == selectedInterestTypeId,
-                        orElse: () => {'name': 'Unknown'},
-                      )['name'] ??
-                          'Unknown',
-                      style: TextStyle(color: Colors.white),
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Expanded(
+                  child: Container(
+                    padding:  EdgeInsets.all(16.h),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text(
+                          'Create Interest',
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        const Divider(
+                          height: 30.0,
+                          thickness: 1,
+                        ),
+                        Container(
+                          height: 200.h,
+                          padding:  EdgeInsets.all(10.h),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: SingleChildScrollView(
+                            child: Wrap(
+                              spacing: 8.0.w,
+                              runSpacing: 8.0.w,
+                              children: fetchedInterestTypes!.map((interestType) {
+                                final id = interestType['id'];
+                                final isSelected = selectedInterestIds.contains(id);
+
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      if (isSelected) {
+                                        selectedInterestIds.remove(id);
+                                      } else {
+                                        selectedInterestIds.add(id);
+                                      }
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: EdgeInsets.symmetric(horizontal: 10.0.w, vertical: 10.0.h),
+                                    decoration: BoxDecoration(
+                                      color: isSelected ? Colors.blue[200] : Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text(
+                                          interestType['name'],
+                                          style: TextStyle(fontSize: 16),
+                                        ),
+                                        if (isSelected) Icon(Icons.check, color: Colors.blue),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                    // IconButton(
-                    //   onPressed: () {
-                    //     setState(() {
-                    //       selectedInterestTypeId = -1;
-                    //     });
-                    //   },
-                    //   icon: Icon(
-                    //     Icons.close,
-                    //     color: Colors.white,
-                    //     size: 16,
-                    //   ),
-                    // ),
-                  ],
-                ),
-              )
-                  : SizedBox.shrink(),
-              DropdownButtonFormField2(
-                value: selectedInterestTypeId,
-                items: fetchedInterestTypes?.map((interestType) {
-                  return DropdownMenuItem(
-                    value: interestType['id'],
-                    child: Text(interestType['name']),
-                  );
-                }).toList() ??
-                    [],
-                // Rest of your code...
-              ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: EdgeInsets.only(top: 60.0.h),
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      await _insertMemberInterestDetails(
-                          selectedInterestTypeId, widget.member['id']);
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Create Interest'),
                   ),
                 ),
-              ),
-            ],
-          ),
+                Align(
+                  alignment: Alignment.bottomCenter,
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      List<int> uniqueInterestIds = selectedInterestIds.toSet().toList();
+                      await _insertMemberInterestDetails(uniqueInterestIds, widget.member['id']);
+
+                      // Clear selectedInterestIds after inserting
+                      setState(() {
+                        selectedInterestIds.clear();
+                      });
+                      Navigator.pop(context);
+                    },
+                    style: OutlinedButton.styleFrom(
+                      padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
+                      backgroundColor: const Color(0xffe1f2ff),
+                      side: BorderSide.none,
+                    ),
+                    child: const Text(
+                      'Create Interest',
+                      style: TextStyle(
+                        color: Color(0xff006bbf),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
+
 
 
 
