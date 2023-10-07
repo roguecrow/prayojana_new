@@ -291,7 +291,7 @@ class _MemberInterestState extends State<MemberInterest> {
               children: [
                 Expanded(
                   child: Container(
-                    padding:  EdgeInsets.all(16.h),
+                    padding: EdgeInsets.all(16.h),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -308,7 +308,7 @@ class _MemberInterestState extends State<MemberInterest> {
                         ),
                         Container(
                           height: 200.h,
-                          padding:  EdgeInsets.all(10.h),
+                          padding: EdgeInsets.all(10.h),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey),
                             borderRadius: BorderRadius.circular(10),
@@ -371,7 +371,7 @@ class _MemberInterestState extends State<MemberInterest> {
                       Navigator.pop(context);
                     },
                     style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 10.w),
+                      padding: EdgeInsets.symmetric(vertical: 15.h, horizontal: 15.w), // Increased padding
                       backgroundColor: const Color(0xffe1f2ff),
                       side: BorderSide.none,
                     ),
