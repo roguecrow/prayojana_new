@@ -32,13 +32,14 @@ class _MemberInterestState extends State<MemberInterest> {
   List<dynamic>? fetchedInterestTypes = [];
   List<int> selectedInterestIds = []; // Step 1: Initialize the list
   List<int> deletedInterestTypeIds = [];
+  List<int> savedInterestTypeIds = [];
+
 
 
 
   @override
   void initState() {
     super.initState();
-    _fetchInterestTypes();
     if (widget.member != null) {
       _fetchMemberInterestDetails();
     } else {
@@ -59,21 +60,34 @@ class _MemberInterestState extends State<MemberInterest> {
     List<dynamic>? interestDetails = await MemberApi().fetchMemberInterestDetails(memberId);
     if (interestDetails != null && interestDetails.isNotEmpty) {
       List<dynamic>? memberInterests = interestDetails[0]['interests'];
+      List<int> savedIds = memberInterests!.map((interest) => interest['interest_type_id']).cast<int>().toList();
+
       setState(() {
         memberInterestDetails = interestDetails;
-        interests = memberInterests!;
-        print(interests);
+        interests = memberInterests;
+        savedInterestTypeIds = savedIds;
         isLoading = false;
       });
     } else {
       print('Error fetching member details');
     }
+    await _fetchInterestTypes(); // Fetch interest types after member interests are fetched
+
   }
+
+
 
 
   void _showUndoSnackBar(BuildContext context, dynamic interest, int index, int memberId) {
     final snackBar = SnackBar(
-      content: Text("Interest deleted"),
+      content: const Text("Interest deleted"),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(10), // Adjust the border radius as needed
+      ),
+      margin: const EdgeInsets.all(10), // Adjust the margin as needed
+      behavior: SnackBarBehavior.floating, // Makes the snackbar float above the bottom
+      duration: const Duration(seconds: 2), // Adjust the duration as needed
+      animation: _snackBarFadeAnimation(), // Use a custom animation
       action: SnackBarAction(
         label: 'Undo',
         onPressed: () {
@@ -86,20 +100,37 @@ class _MemberInterestState extends State<MemberInterest> {
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
+  Animation<double> _snackBarFadeAnimation() {
+    return CurvedAnimation(
+      parent: const AlwaysStoppedAnimation(1),
+      curve: Curves.easeOut, // Adjust the curve as needed
+    );
+  }
+
 
 
 
   Future<void> _fetchInterestTypes() async {
     try {
       fetchedInterestTypes = await MemberApi().fetchInterestDetails();
-      if(fetchedInterestTypes != null){
+      if (fetchedInterestTypes != null) {
         fetchedInterestTypes = fetchedInterestTypes!.toSet().toList();
+
+        // Filter out saved interest types
+        if (savedInterestTypeIds.isNotEmpty) {
+          print(savedInterestTypeIds);
+          fetchedInterestTypes!.removeWhere((interestType) {
+            return savedInterestTypeIds.contains(interestType['id']);
+          });
+        }
+
         print('fetchedInterestTypes  - $fetchedInterestTypes');
       }
     } catch (error) {
       print('Error fetching interest types: $error');
     }
   }
+
 
   Future<void> _updateMemberInterestDetails(int interestId) async {
     String accessToken = await getFirebaseAccessToken();
@@ -225,6 +256,7 @@ class _MemberInterestState extends State<MemberInterest> {
       ),
       builder: (BuildContext context) {
         return SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           child: Container(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -308,13 +340,15 @@ class _MemberInterestState extends State<MemberInterest> {
                         ),
                         Container(
                           height: 200.h,
+                          width: 250.h,
                           padding: EdgeInsets.all(10.h),
                           decoration: BoxDecoration(
                             border: Border.all(color: Colors.grey),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: SingleChildScrollView(
-                            child: Wrap(
+                            child: fetchedInterestTypes != null && fetchedInterestTypes!.isNotEmpty
+                                ? Wrap(
                               spacing: 8.0.w,
                               runSpacing: 8.0.w,
                               children: fetchedInterestTypes!.map((interestType) {
@@ -335,21 +369,30 @@ class _MemberInterestState extends State<MemberInterest> {
                                     padding: EdgeInsets.symmetric(horizontal: 10.0.w, vertical: 10.0.h),
                                     decoration: BoxDecoration(
                                       color: isSelected ? Colors.blue[200] : Colors.white,
-                                      borderRadius: BorderRadius.circular(20),
+                                      borderRadius: BorderRadius.circular(20.r),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        Text(
-                                          interestType['name'],
-                                          style: TextStyle(fontSize: 16),
+                                        Expanded( // Added Expanded here
+                                          child: Text(
+                                            interestType['name'],
+                                            style: TextStyle(fontSize: 16.sp),
+                                            overflow: TextOverflow.visible,
+                                          ),
                                         ),
-                                        if (isSelected) Icon(Icons.check, color: Colors.blue),
+                                        if (isSelected) const Icon(Icons.check, color: Colors.blue),
                                       ],
                                     ),
                                   ),
                                 );
                               }).toList(),
+                            )
+                                : Padding(
+                              padding: EdgeInsets.only(top: 80.h),
+                              child: Center(
+                                child: Text('No interests available...', style: TextStyle(fontSize: 16.sp)),
+                              ),
                             ),
                           ),
                         ),
@@ -359,26 +402,35 @@ class _MemberInterestState extends State<MemberInterest> {
                 ),
                 Align(
                   alignment: Alignment.bottomCenter,
-                  child: OutlinedButton(
-                    onPressed: () async {
-                      List<int> uniqueInterestIds = selectedInterestIds.toSet().toList();
-                      await _insertMemberInterestDetails(uniqueInterestIds, widget.member['id']);
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: 25.0.h),
+                    child: OutlinedButton.icon(
+                      onPressed: selectedInterestIds.isNotEmpty
+                          ? () async {
+                        List<int> uniqueInterestIds = selectedInterestIds.toSet().toList();
+                        await _insertMemberInterestDetails(uniqueInterestIds, widget.member['id']);
 
-                      // Clear selectedInterestIds after inserting
-                      setState(() {
-                        selectedInterestIds.clear();
-                      });
-                      Navigator.pop(context);
-                    },
-                    style: OutlinedButton.styleFrom(
-                      padding: EdgeInsets.symmetric(vertical: 15.h, horizontal: 15.w), // Increased padding
-                      backgroundColor: const Color(0xffe1f2ff),
-                      side: BorderSide.none,
-                    ),
-                    child: const Text(
-                      'Create Interest',
-                      style: TextStyle(
-                        color: Color(0xff006bbf),
+                        // Clear selectedInterestIds after inserting
+                        setState(() {
+                          selectedInterestIds.clear();
+                        });
+                        Navigator.pop(context);
+                      }
+                          : null, // Disable button if selectedInterestIds is empty
+                      style: OutlinedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(vertical: 12.h, horizontal: 22.w),
+                        backgroundColor: selectedInterestIds.isNotEmpty ? const Color(0xff006bbf) : Colors.grey,
+                        side: BorderSide.none,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(22.0.r),
+                        ),
+                      ),
+                      icon:  Icon(Icons.add, size: 16.sp,color: Colors.white,),
+                      label: const Text(
+                        'Interest',
+                        style: TextStyle(
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
@@ -450,6 +502,7 @@ class _MemberInterestState extends State<MemberInterest> {
                         dismissible: DismissiblePane(onDismissed: () async {
                           isActive = false;
                           await _updateMemberInterestDetails(interest['id']); // Show snackbar on delete
+                          // ignore: use_build_context_synchronously
                           _showUndoSnackBar(context, interest, index, widget.member['id']);
                         }),
                         children: [
@@ -513,4 +566,3 @@ class _MemberInterestState extends State<MemberInterest> {
     );
   }
 }
-

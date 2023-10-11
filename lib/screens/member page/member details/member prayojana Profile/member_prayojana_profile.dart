@@ -116,17 +116,23 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
                   Column(
                     children: [
                       ListTile(
-                        leading: const Icon(Icons.next_plan_outlined),
+                        leading: const Icon(Icons.playlist_add_check_rounded),
                         title: const Text('Plan'),
-                        subtitle: Text(planhistory['plan']['name'] ?? 'N/A'),
+                        subtitle: Text(
+                          planhistory != null &&
+                              planhistory['plan'] != null &&
+                              planhistory['plan']['name'] != null
+                              ? planhistory['plan']['name']
+                              : 'N/A',
+                        ),
                       ),
                       ListTile(
                         leading: const Icon(Icons.date_range),
-                        title: Row(
+                        title: const Row(
                           children: [
-                            const Text('Start Date'),
-                            const Spacer(), // Add a spacer to push the End Date to the right
-                            const Text('End Date'),
+                            Text('Start Date'),
+                            Spacer(), // Add a spacer to push the End Date to the right
+                            Text('End Date'),
                           ],
                         ),
                         subtitle: Row(
@@ -138,14 +144,13 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
                           ],
                         ),
                       ),
-
                       ListTile(
                         leading: const Icon(Icons.date_range),
-                        title: Row(
+                        title: const Row(
                           children: [
-                            const  Text('Plan Amount'),
-                            const Spacer(), // Add a spacer to push the End Date to the right
-                            const Text('Amount Paid'),
+                            Text('Plan Amount'),
+                            Spacer(), // Add a spacer to push the End Date to the right
+                            Text('Amount Paid'),
                           ],
                         ),
                         subtitle: Row(
@@ -221,7 +226,6 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-
                     _buildInfoRow(
                       'Salutation',
                       memberPrayojanaProfileDetails.isNotEmpty && memberPrayojanaProfileDetails[0]['client_members'] != null && memberPrayojanaProfileDetails[0]['client_members'][0]['client']['salutation'] != null
@@ -278,15 +282,19 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
                             memberPrayojanaProfileDetails[0]['member_carebuddies'] != null
                             ? memberPrayojanaProfileDetails[0]['member_carebuddies']
                             .map<Widget>((carebuddy) {
+                          final userName = carebuddy['user'] != null && carebuddy['user']['name'] != null
+                              ? carebuddy['user']['name']
+                              : 'N/A';  // note this do not empty carebuddy name
+
                           return Padding(
                             padding: EdgeInsets.only(bottom: 2.0.h), // Add some bottom padding
                             child: Text(
-                              carebuddy['user']['name'],
+                              userName,
                               style: TextStyle(fontSize: 14.0.sp),
                             ),
                           );
                         }).toList()
-                            : [Text('N/A')],
+                            : [const Text('N/A')],
                       ),
                       fontSize: 14.0.sp,
                     ),
@@ -326,11 +334,13 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
                     style: TextStyle(fontSize: 14.sp),
                   ),
                 )
-                    : ListView.builder(
+                    :ListView.builder(
                   physics: const BouncingScrollPhysics(),
                   itemCount: planHistory.length,
                   itemBuilder: (context, index) {
                     dynamic planhistory = planHistory[index];
+                    final planName = planhistory['plan'] != null ? planhistory['plan']['name'] : 'N/A';
+
                     return InkWell(
                       onTap: () {
                         _showPlanHistoryInfo(context, planhistory);
@@ -339,13 +349,13 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
                         margin: const EdgeInsets.symmetric(vertical: 4.0),
                         decoration: BoxDecoration(
                           border: Border.all(
-                            color: Colors.transparent, // Border color
-                            width: 0.1, // Border width
+                            color: Colors.transparent,
+                            width: 0.1,
                           ),
                         ),
                         child: ListTile(
                           title: Text(
-                            planhistory['plan']['name'] ?? 'N/A', // Fixed this line
+                            planName ?? 'N/A',
                             style: TextStyle(fontSize: 14.sp),
                           ),
                           trailing: Icon(

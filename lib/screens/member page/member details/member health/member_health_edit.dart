@@ -68,31 +68,79 @@ class _EditMemberHealthState extends State<EditMemberHealth> {
     }
   }
 
+  Future<void> _insertMemberInsuranceDetails() async {
+    String accessToken = await getFirebaseAccessToken();
+
+    final Map<String, dynamic> updatedMemberData = {
+      'agent_name': agentNameController.text,
+      'agent_number': agentNumberController.text,
+      'insurer': insureController.text,
+      'member_id': widget.memberHealthDetails[0]['id'],
+      'policy_number': policyNumberController.text,
+      'valid_till': validTillController.text,
+    };
+
+    final http.Response response = await http.post(
+      Uri.parse(ApiConstants.graphqlUrl), // Replace with your API endpoint
+      headers: {
+        'Content-Type': ApiConstants.contentType,
+        'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+        'x-hasura-admin-secret': ApiConstants.adminSecret,
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode({
+        'query': insertMemberHealthDetails, // Use your GraphQL mutation string here
+        'variables': updatedMemberData,
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      String responseString = response.body;
+      Map<String, dynamic> responseData = json.decode(responseString);
+
+      int affectedRows = responseData['data']['insert_member_insurances']['affected_rows'];
+
+      if (affectedRows > 0) {
+        // Data successfully inserted
+        // ignore: use_build_context_synchronously
+        _fetchMemberHealthDetails();
+      } else {
+        // Data insertion failed
+        print('Failed to insert data');
+      }
+    } else {
+      print('API Error: ${response.reasonPhrase}');
+    }
+  }
+
+
+
+
 
   Future<void> _updateMemberInsuranceDetails() async {
     String accessToken = await getFirebaseAccessToken();
 
-    if (widget.memberHealthDetails == null || widget.memberHealthDetails.isEmpty) {
+    if (widget.memberHealthDetails.isEmpty) {
       print('Error: memberHealthDetails is null or empty');
       return;
     }
 
     final Map<String, dynamic> updatedMemberData = {
-      'memberId': widget.memberHealthDetails[0]['id'],
-      'insurer': insureController.text,
-      'policyNumber': policyNumberController.text,
-      'validTill': validTillController.text,
       'agentName': agentNameController.text,
       'agentNumber': agentNumberController.text,
+      'insurer': insureController.text,
+      'Id': widget.memberHealthDetails[0]['member_insurances'][0]['id'],
+      'policyNumber': policyNumberController.text,
+      'validTill': validTillController.text,
     };
 
-    if (updatedMemberData['memberId'] == null) {
-      print('Invalid memberId');
+    if (updatedMemberData['Id'] == null) {
+      print('Invalid Id');
       return;
     }
 
     final http.Response response = await http.post(
-      Uri.parse(ApiConstants.graphqlUrl), // Replace with your API endpoint
+      Uri.parse(ApiConstants.graphqlUrl),
       headers: {
         'Content-Type': ApiConstants.contentType,
         'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
@@ -109,30 +157,22 @@ class _EditMemberHealthState extends State<EditMemberHealth> {
       String responseString = response.body;
       Map<String, dynamic> responseData = json.decode(responseString);
       List<dynamic>? updatedMember =
-      responseData['data']?['update_members']?['returning'];
+      responseData['data']?['update_member_insurances']?['returning'];
 
       if (updatedMember != null) {
-        // Print the affected rows
-
         print('updated data $updatedMember');
         print('Affected Rows: ${updatedMember.length}');
 
-        // Update the local data with the new member data here if needed
-
-        // Pop the screen and return the updated member data
-        Navigator.pop(context, true);
         _fetchMemberHealthDetails();
       } else {
-        String responseString = response.body;
-        print('Response from Server: $responseString'); // Add this line
+        print('Response from Server: $responseString');
         print('not updated');
-        // Handle the case when the response does not contain updated member data
       }
     } else {
       print('API Error: ${response.reasonPhrase}');
-      // Handle the API error and show an error message to the user if needed
     }
   }
+
 
 
 
@@ -269,7 +309,12 @@ class _EditMemberHealthState extends State<EditMemberHealth> {
                       child: ElevatedButton(
                         onPressed: () {
                           _updateMemberHealthDetails();
-                          _updateMemberInsuranceDetails();
+
+                          if (widget.memberHealthDetails[0]['member_insurances'] == null || widget.memberHealthDetails[0]['member_insurances'].isEmpty) {
+                            _insertMemberInsuranceDetails();
+                          } else {
+                            _updateMemberInsuranceDetails();
+                          }
                         },
                         style: ElevatedButton.styleFrom(
                           padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 22.w),
@@ -306,7 +351,7 @@ class _EditMemberHealthState extends State<EditMemberHealth> {
                             child: Text(
                               value,
                               style: GoogleFonts.inter(
-                                textStyle: TextStyle(
+                                textStyle: const TextStyle(
                                   color: Colors.black,
                                 ),
                               ),
@@ -457,6 +502,7 @@ class _EditMemberHealthState extends State<EditMemberHealth> {
                         fontSize: 14.sp,
                       ),
                       maxLines: null, // Allow multiple lines of input
+                      keyboardType: TextInputType.phone, // Set keyboardType to number
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.white,

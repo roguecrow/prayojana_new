@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:loading_indicator/loading_indicator.dart';
+import 'package:prayojana_new/screens/member%20page/member%20details/member%20assistance/member_assistance_edit.dart';
+import 'package:prayojana_new/screens/member%20page/member%20details/member%20assistance/member_assistance_new.dart';
 
 import '../../../../services/api_service.dart';
 
@@ -29,7 +31,7 @@ class _MemberAssistanceState extends State<MemberAssistance> {
   void initState() {
     super.initState();
     if (widget.member != null) {
-      _fetchMemberNotesDetails();
+      _fetchMemberAssistanceDetails();
     } else {
       print('Error: widget.member is null');
     }
@@ -41,7 +43,7 @@ class _MemberAssistanceState extends State<MemberAssistance> {
   }
 
 
-  Future<void> _fetchMemberNotesDetails() async {
+  Future<void> _fetchMemberAssistanceDetails() async {
     var memberId = widget.member['id'];
     print('Clicked Member ID: $memberId');
     List<dynamic>? assistanceDetails = await MemberApi().fetchMemberAssistanceDetails(memberId);
@@ -61,6 +63,7 @@ class _MemberAssistanceState extends State<MemberAssistance> {
     }
   }
 
+
   void _showAssistanceInfo(BuildContext context, dynamic assistance) {
     showModalBottomSheet(
       context: context,
@@ -75,15 +78,31 @@ class _MemberAssistanceState extends State<MemberAssistance> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'Details',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w400,
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Padding(
+                    padding:  EdgeInsets.only(left: 12.0.h),
+                    child: const Text(
+                      'Details',
+                      style: TextStyle(
+                        fontSize: 30,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: () async {
+                     await _navigateToEditPage(context, assistance);
+                     Navigator.pop(context);
+                      // Add your edit logic here
+                    },
+                    icon: const Icon(Icons.edit_note),
+                  ),
+                ],
               ),
-              const Divider(
-                height: 10.0, // Reduced height of the divider
+              Divider(
+                height: 12.0.h, // Reduced height of the divider
                 thickness: 1,
               ),
               SizedBox( // Wrap the SingleChildScrollView with a SizedBox to limit its height
@@ -154,7 +173,7 @@ class _MemberAssistanceState extends State<MemberAssistance> {
           : ListView(
         physics: const BouncingScrollPhysics(),
         children: [
-          const SizedBox(height: 20,),
+           SizedBox(height: 20.h,),
           Padding(
             padding:  EdgeInsets.only(left: 22.0.w),
             child: Text(
@@ -188,19 +207,13 @@ class _MemberAssistanceState extends State<MemberAssistance> {
                       _showAssistanceInfo(context, assistance);
                     },
                     child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 1.0),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.transparent, // Border color
-                          width: 0.1, // Border width
-                        ),
-                      ),
+                      margin: const EdgeInsets.symmetric(vertical: 4.0),
                       child: ListTile(
                         title: Text(
-                          assistance['name'] ?? 'N/A',
+                         assistance['name'] ?? 'N/A',
                           style: TextStyle(fontSize: 14.sp),
                         ),
-                        trailing: Icon(
+                        trailing:  Icon(
                           Icons.arrow_forward_ios_outlined,
                           size: 12.0.h,
                         ),
@@ -213,14 +226,41 @@ class _MemberAssistanceState extends State<MemberAssistance> {
           ),
         ],
       ),
-      // floatingActionButton: FloatingActionButton.extended(
-      //   onPressed: () {
-      //     _navigateToMemberNoteEdit();
-      //   },
-      //   label: const Text('EDIT'),
-      //   icon: const Icon(Icons.edit_outlined),
-      //   backgroundColor: const Color(0xff018fff),
-      // ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          _navigateToMemberAssistanceCreate();
+        },
+        label: const Text('NEW'),
+        icon: const Icon(Icons.edit_outlined),
+        backgroundColor: const Color(0xff018fff),
+      ),
+
     );
+  }
+  void  _navigateToMemberAssistanceCreate() async {
+    final shouldCreate = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CreateMemberAssistance(memberId: widget.member['id']), // Pass memberId
+      ),
+    );
+
+    if (shouldCreate == true) {
+      // Refresh the task data after updating
+      _fetchMemberAssistanceDetails();
+    }
+  }
+
+  Future<void> _navigateToEditPage(BuildContext context, dynamic assistance) async {
+    final shouldCreate = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => MemberAssistanceEdit(assistance: assistance),
+      ),
+    );
+    if (shouldCreate == true) {
+      // Refresh the task data after updating
+      _fetchMemberAssistanceDetails();
+    }
   }
 }

@@ -132,7 +132,7 @@ const String updateMemberInsurancesDetails = r'''
     $insurer: String!,
     $policyNumber: String!,
     $validTill: String!,
-    $memberId: Int!
+    $Id: Int!
   ) {
     update_member_insurances(
       _set: {
@@ -142,7 +142,7 @@ const String updateMemberInsurancesDetails = r'''
         policy_number: $policyNumber,
         valid_till: $validTill
       },
-      where: {member_id: {_eq: $memberId}}
+      where: {id: {_eq: $Id}}
     ) {
       affected_rows
       returning {
@@ -601,6 +601,7 @@ String getMemberHealthQuery(int id) {
             }
             member_medical_centers {
               medical_center {
+                id
                 name
                 phone
                 address
@@ -608,6 +609,7 @@ String getMemberHealthQuery(int id) {
                   name
                 }
               }
+              id
             }
             member_doctors {
               doctor {
@@ -784,6 +786,139 @@ mutation UpdateInterest($id: Int!, $isActive: Boolean!) {
 ''';
 
 
+const String insertMemberAssistanceDetails = r'''
+ mutation MyMutation(
+  $name: String,
+  $phone: String,
+  $relation: String,
+  $is_proxy_access: Boolean,
+  $is_emergency: Boolean,
+  $location: String,
+  $member_id: Int
+) {
+  insert_member_assistances(
+    objects: {
+      name: $name,
+      phone: $phone,
+      relation: $relation,
+      is_proxy_access: $is_proxy_access,
+      is_emergency: $is_emergency,
+      location: $location,
+      member_id: $member_id
+    }
+  ) {
+    affected_rows
+    returning {
+      alternate_number
+      id
+      is_emergency
+      is_proxy_access
+      location
+      member_id
+      name
+      phone
+      relation
+    }
+  }
+}
+''';
 
+const String updateMemberAssistanceDetails = r'''
+mutation MyMutation(
+  $id: Int!,
+  $name: String!,
+  $phone: String!,
+  $relation: String!,
+  $is_emergency: Boolean!,
+  $is_proxy_access: Boolean!,
+  $location: String!
+) {
+  update_member_assistances(
+    where: { id: { _eq: $id }},
+    _set: {
+      name: $name,
+      phone: $phone,
+      relation: $relation,
+      is_emergency: $is_emergency,
+      is_proxy_access: $is_proxy_access,
+      location: $location
+    }
+  ) {
+    affected_rows
+    returning {
+      id
+      is_emergency
+      is_proxy_access
+      location
+      name
+      phone
+      relation
+      member_id
+    }
+  }
+}
+
+''';
+
+const String insertMemberHealthDetails = r'''
+mutation MyMutation(
+  $agent_name: String!,
+  $agent_number: String!,
+  $insurer: String!,
+  $member_id: Int!,
+  $policy_number: String!,
+  $valid_till: String!
+) {
+  insert_member_insurances(
+    objects: {
+      agent_name: $agent_name,
+      agent_number: $agent_number,
+      insurer: $insurer,
+      member_id: $member_id,
+      policy_number: $policy_number,
+      valid_till: $valid_till
+    }
+  ) {
+    affected_rows
+    returning {
+      agent_name
+      agent_number
+      id
+      insurer
+      member_id
+      policy_number
+      valid_till
+    }
+  }
+}
+
+''';
+
+const String medicalCenterIds = r'''
+query MyQuery {
+  medical_centers {
+    id
+    name
+  }
+}
+''';
+
+const String updateMemberMedicalCenterDetails = r'''
+mutation MyMutation($id: Int!, $member_id: Int!, $medical_center_id: Int!) {
+  update_member_medical_center(
+    where: {id: {_eq: $id}, member_id: {_eq: $member_id}}, 
+    _set: {medical_center_id: $medical_center_id}
+  ) {
+    affected_rows
+    returning {
+      medical_center_id
+      medical_center {
+        name
+      }
+    }
+  }
+}
+
+''';
 
 

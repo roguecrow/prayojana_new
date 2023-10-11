@@ -40,12 +40,19 @@ class _MemberDocumentsState extends State<MemberDocuments> {
       setState(() {
         memberDocumentDetails = documentDetails;
         isLoading = false;
+        print(isLoading);
         print(memberDocumentDetails);
       });
     } else {
-      print('Error fetching member details');
+      setState(() {
+        isLoading = false;
+      });
+      print(isLoading);
+      print(memberDocumentDetails);
+      print('member documents details is empty');
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -56,34 +63,35 @@ class _MemberDocumentsState extends State<MemberDocuments> {
           height: 50,
           width: 50,
           child: LoadingIndicator(
-            indicatorType: Indicator.ballPulseSync, /// Required, The loading type of the widget
-            colors: [Color(0xff006bbf)],       /// Optional, The color collections
+            indicatorType: Indicator.ballPulseSync,
+            colors: [Color(0xff006bbf)],
           ),
         ),
-      ) // Add a loading indicator while data is being fetched
-          : Padding(
-            padding: const EdgeInsets.all(10.0),
-            child: GridView.builder(
-        gridDelegate:  SliverGridDelegateWithFixedCrossAxisCount(
+      )
+          : memberDocumentDetails.isNotEmpty
+          ? Padding(
+        padding: const EdgeInsets.all(10.0),
+        child: GridView.builder(
+          gridDelegate:  SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: 2,
             mainAxisSpacing: 8.h,
             crossAxisSpacing: 8.h,
-        ),
-        itemCount: memberDocumentDetails.length,
-        itemBuilder: (BuildContext context, int index) {
+          ),
+          itemCount: memberDocumentDetails.length,
+          itemBuilder: (BuildContext context, int index) {
             return Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Image.network(
-                  memberDocumentDetails[index]['image'], // Assuming 'image' is the URL of the document
-                  height: 150, // Adjust the height as needed
-                  width: 200, // Adjust the width as needed
-                  fit: BoxFit.cover, // Adjust the fit as needed
+                  memberDocumentDetails[index]['image'],
+                  height: 150,
+                  width: 200,
+                  fit: BoxFit.cover,
                 ),
                 const SizedBox(height: 10),
                 Text(
                   memberDocumentDetails[index]['name'] ?? 'N/A',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: Colors.white,
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -91,9 +99,18 @@ class _MemberDocumentsState extends State<MemberDocuments> {
                 ),
               ],
             );
-        },
-      ),
+          },
+        ),
+      )
+          : const Center(
+        child: Text(
+          'There are no documents to view',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
           ),
+        ),
+      ),
     );
   }
 }

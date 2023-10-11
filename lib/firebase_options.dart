@@ -44,38 +44,41 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions web = FirebaseOptions(
-    apiKey: 'AIzaSyBSa3pooOWOld4Cejh626rpnYeH8sKo1kk',
-    appId: '1:172940963011:web:bc185ebfcad18928b3c676',
-    messagingSenderId: '172940963011',
-    projectId: 'prayojana-stage',
-    authDomain: 'prayojana-stage.firebaseapp.com',
-    storageBucket: 'prayojana-stage.appspot.com',
-    measurementId: 'G-4L83N7LS3L',
+    apiKey: 'AIzaSyD7JWcZSqvOkZ_4XwtLVscE2rwYTEXLqRs',
+    appId: '1:759450326852:web:6754d1027917657b35e911',
+    messagingSenderId: '759450326852',
+    projectId: 'prayojana-fa07b',
+    authDomain: 'prayojana-fa07b.firebaseapp.com',
+    storageBucket: 'prayojana-fa07b.appspot.com',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyCeQKEmgNP-pE8epBsNcc4EOdrfX1u9Cv4',
-    appId: '1:172940963011:android:044af85c172219b4b3c676',
-    messagingSenderId: '172940963011',
-    projectId: 'prayojana-stage',
-    storageBucket: 'prayojana-stage.appspot.com',
+    apiKey: 'AIzaSyB22cas1-X_iMXRhmCVeCstORQaEN9Dh2E',
+    appId: '1:759450326852:android:d71fc4732a1713b335e911',
+    messagingSenderId: '759450326852',
+    projectId: 'prayojana-fa07b',
+    storageBucket: 'prayojana-fa07b.appspot.com',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAwh4ZKA4IAQGtpqf0xFlEJuoielsKcrEI',
-    appId: '1:172940963011:ios:1ad19ff9d215f1eeb3c676',
-    messagingSenderId: '172940963011',
-    projectId: 'prayojana-stage',
-    storageBucket: 'prayojana-stage.appspot.com',
+    apiKey: 'AIzaSyCKU6VXrxtsJtW2v3C1uUYt30aIBECr120',
+    appId: '1:759450326852:ios:258fac6b81a72b5f35e911',
+    messagingSenderId: '759450326852',
+    projectId: 'prayojana-fa07b',
+    storageBucket: 'prayojana-fa07b.appspot.com',
+    androidClientId: '759450326852-2mea2vjick560hmm63gfj9tjat53jlm7.apps.googleusercontent.com',
+    iosClientId: '759450326852-q6qaefucbrnk0gveh1g4cfd74sjv556r.apps.googleusercontent.com',
     iosBundleId: 'com.example.prayojanaNew',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(
-    apiKey: 'AIzaSyAwh4ZKA4IAQGtpqf0xFlEJuoielsKcrEI',
-    appId: '1:172940963011:ios:1ad19ff9d215f1eeb3c676',
-    messagingSenderId: '172940963011',
-    projectId: 'prayojana-stage',
-    storageBucket: 'prayojana-stage.appspot.com',
+    apiKey: 'AIzaSyCKU6VXrxtsJtW2v3C1uUYt30aIBECr120',
+    appId: '1:759450326852:ios:258fac6b81a72b5f35e911',
+    messagingSenderId: '759450326852',
+    projectId: 'prayojana-fa07b',
+    storageBucket: 'prayojana-fa07b.appspot.com',
+    androidClientId: '759450326852-2mea2vjick560hmm63gfj9tjat53jlm7.apps.googleusercontent.com',
+    iosClientId: '759450326852-q6qaefucbrnk0gveh1g4cfd74sjv556r.apps.googleusercontent.com',
     iosBundleId: 'com.example.prayojanaNew',
   );
 }

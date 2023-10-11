@@ -268,7 +268,7 @@ class MemberApi {
         return null;
       }
     } catch (error) {
-      print('Error fetching member details: $error');
+      print('Error Fetching member document details: $error');
       return null;
     }
   }

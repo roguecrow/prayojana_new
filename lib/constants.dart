@@ -29,8 +29,8 @@ class ApiConstants {
       : 'https://prayojana-api-v1.slashdr.com/v1/graphql';
 
   static const String memberUrl = kProfileMode
-      ? 'https://prayojana-api-staging.netlify.app/.netlify/functions/cbmem-details'
-      : 'https://prayojana.slashdr.com/.netlify/functions/cbmem-details';
+      ? 'https://prayojana-api-staging.netlify.app/.netlify/functions/mem-details'
+      : 'https://prayojana.slashdr.com/.netlify/functions/mem-details';
 
   static const String contentType = 'application/json';
   static const String hasuraConsoleClientName = 'hasura-console';
