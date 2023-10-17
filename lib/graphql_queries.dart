@@ -580,50 +580,54 @@ String getMemberQuery(int id) {
 String getMemberHealthQuery(int id) {
   return '''
     query MyQuery {
-          members(where: { id: { _eq: $id } }) {
-            id
-            name
-            dob
-            blood_group
-            medical_history
-            vitacuro_id
-            member_insurances {
-              id
-              insurer
-              policy_number
-              valid_till
-              agent_number
-              agent_name
-              member_insurance_images {
-                id
-                name
-              }
-            }
-            member_medical_centers {
-              medical_center {
-                id
-                name
-                phone
-                address
-                medical_center_type {
-                  name
-                }
-              }
-              id
-            }
-            member_doctors {
-              doctor {
-                name
-                mobile_number
-                notes
-                doctor_addresses {
-                  address
-                }
-              }
-            }
-          }
+  members(where: {id: {_eq: $id }}) {
+    id
+    name
+    dob
+    blood_group
+    medical_history
+    vitacuro_id
+    member_insurances {
+      id
+      insurer
+      policy_number
+      valid_till
+      agent_number
+      agent_name
+      member_insurance_images {
+        id
+        name
+      }
+    }
+    member_medical_centers {
+      medical_center {
+        id
+        name
+        phone
+        address
+        medical_center_type {
+          name
         }
-  ''';
+      }
+      id
+    }
+    member_doctors {
+      doctor {
+        id
+        name
+        mobile_number
+        notes
+        doctor_addresses {
+          id
+          address
+        }
+      }
+      id
+      doctor_address_id
+    }
+  }
+}
+''';
 }
 
 String getMemberNotesQuery(int id) {
@@ -903,6 +907,19 @@ query MyQuery {
 }
 ''';
 
+const String doctorIds = r'''
+query MyQuery {
+  doctors {
+    id
+    name
+    doctor_addresses {
+      id
+      address
+    }
+  }
+}
+''';
+
 const String updateMemberMedicalCenterDetails = r'''
 mutation MyMutation($id: Int!, $member_id: Int!, $medical_center_id: Int!) {
   update_member_medical_center(
@@ -918,7 +935,74 @@ mutation MyMutation($id: Int!, $member_id: Int!, $medical_center_id: Int!) {
     }
   }
 }
+''';
+
+
+const String insertDoctorsDetails = r'''
+mutation MyMutation($member_id: Int!, $doctor_id: Int!, $doctor_address_id: Int!) {
+  insert_member_doctors(objects: {member_id: $member_id, doctor_id: $doctor_id, doctor_address_id: $doctor_address_id}) {
+    affected_rows
+    returning {
+      id
+      member_id
+      doctor_id
+      doctor {
+        name
+      }
+      doctor_address_id
+    }
+  }
+}
+''';
+
+
+const String insertMemberMedicalCenter = r'''
+mutation MyMutation($medical_center_id: Int!, $member_id: Int!) {
+  insert_member_medical_center(objects: {medical_center_id: $medical_center_id, member_id: $member_id}) {
+    affected_rows
+    returning {
+      id
+      medical_center_id
+      member_id
+      medical_center {
+        name
+      }
+    }
+  }
+}
+''';
+
+String getDoctorAddressDetails(int id) {
+  return '''
+query MyQuery {
+  doctor_addresses(where: {doctor_id: {_eq: $id }}) {
+    id
+    address
+  }
+}
+''';
+}
+
+const String updateDoctorDetails = r'''
+mutation MyMutation($id: Int!, $member_id: Int!, $doctor_address_id: Int!, $doctor_id: Int!) {
+  update_member_doctors(
+    where: {id: {_eq: $id}, member_id: {_eq: $member_id}},
+    _set: {doctor_address_id: $doctor_address_id, doctor_id: $doctor_id}
+  ) {
+    affected_rows
+    returning {
+      id
+      doctor_id
+      member_id
+      doctor_address_id
+      doctor_address {
+        address
+      }
+    }
+  }
+}
 
 ''';
+
 
 

@@ -191,7 +191,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
                 ],
               ),
             ),
-            // ... (button row remains the same)
             Expanded(
               child: interactionMembers.isEmpty
                   ? const Center(child: CircularProgressIndicator())

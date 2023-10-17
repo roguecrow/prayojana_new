@@ -310,9 +310,9 @@ class _MemberInterestState extends State<MemberInterest> {
   void _insertInterestType() {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(
+      shape:  RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
-          top: Radius.circular(20),
+          top: Radius.circular(20.r),
         ),
       ),
       builder: (BuildContext context) {
@@ -515,6 +515,7 @@ class _MemberInterestState extends State<MemberInterest> {
                             onPressed: (BuildContext context) async {
                               isActive = false;
                               await _updateMemberInterestDetails(interest['id']); // Show snackbar on delete
+                              // ignore: use_build_context_synchronously
                               _showUndoSnackBar(context, interest, index, widget.member['id']);
                             },
                           ),

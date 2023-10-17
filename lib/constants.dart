@@ -10,8 +10,8 @@ class ApiConstants {
   static String sampleUrl = 'https://jsonplaceholder.typicode.com/users';
 
   static String taskUrl = kProfileMode
-      ? 'https://prayojana-api-staging.netlify.app/.netlify/functions//cbtask-view'
-      : 'https://prayojana.slashdr.com/.netlify/functions//cbtask-view';
+      ? 'https://prayojana-api-staging.netlify.app/.netlify/functions//task-view'
+      : 'https://prayojana.slashdr.com/.netlify/functions//task-view';
 
   static String interactionUrl =  kProfileMode
       ? 'https://prayojana-api-staging.netlify.app/.netlify/functions/interaction-view'

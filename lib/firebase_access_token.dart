@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
@@ -9,22 +10,45 @@ class AccessToken {
       if (user != null) {
         String? accessToken = await user.getIdToken();
         final idTokenResult = await user.getIdTokenResult();
-        final Refresh_token =user.refreshToken;
+        //final refreshToken = await user.getIdToken(true);
         final expiryTime = idTokenResult.expirationTime;
-        print(Refresh_token);
-        print(expiryTime);
-
+       // print('refreshToken - $refreshToken');
+        print('expiryTime - $expiryTime');
+        setupAccessTokenRefresh(user);
 
         if (accessToken != null) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('firebaseAccessToken', accessToken);
-          print(accessToken);
+          print('StoredAccessToken - $accessToken');
         }
       }
     } catch (e) {
       print(e);
     }
   }
+  Future<void> refreshAccessToken(User user) async {
+    try {
+      final String? refreshedAccessToken = await user.getIdToken(true);
+
+      if (refreshedAccessToken != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('firebaseAccessToken', refreshedAccessToken);
+        print('StoredRefreshToken - $refreshedAccessToken');
+      }
+    } catch (e) {
+      print('Error refreshing access token: $e');
+    }
+  }
+
+  void setupAccessTokenRefresh(User user) {
+    Timer.periodic(Duration(minutes: 50), (timer) {
+      refreshAccessToken(user);
+    });
+  }
 }
+
+
+
+
 
 

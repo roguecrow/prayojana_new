@@ -80,13 +80,18 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
     return newFormat.format(dateTime);
   }
 
-  String formatTime(String time) {
+  String formatTime(String? time) {
+    if (time == null) {
+      return ''; // Or any default value you want to use for empty time
+    }
+
     final originalFormat = DateFormat('HH:mm:ss');
     final newFormat = DateFormat('hh:mm a');
 
     final dateTime = originalFormat.parse(time);
     return newFormat.format(dateTime);
   }
+
 
 
 

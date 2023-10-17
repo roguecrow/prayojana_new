@@ -26,7 +26,12 @@ class _MemberHealthState extends State<MemberHealth> {
   List<dynamic> doctors = []; // Add this line
   List<dynamic> medicalCenters = []; // Add this line
   List<Map<String, dynamic>> medicalCentersList = [];
+  List<Map<String, dynamic>> doctorsList = [];
+  List<Map<String, dynamic>> doctorAddressList = [];
+
   String? selectedMedicalCenterId;
+  int? selectDoctorId;
+  String? selectedItemId;
   late int medicalCentersId = 0; // Or whatever initial value makes sense in your application
 
 
@@ -38,6 +43,7 @@ class _MemberHealthState extends State<MemberHealth> {
   void initState() {
     super.initState();
     fetchMedicalCenterIds();
+    fetchDoctorIds();
     if (widget.member != null) {
       _fetchMemberHealthDetails();
     } else {
@@ -75,12 +81,81 @@ class _MemberHealthState extends State<MemberHealth> {
         medicalCentersList.add({'id': center['id'], 'name': center['name']});
       }
 
-      print('MEDICAL CENTER - $medicalCentersList');
+      //print('MEDICAL CENTER - $medicalCentersList');
 
     } else {
       throw Exception('Failed to load medical center IDs');
     }
   }
+
+  Future fetchDoctorIds() async {
+    String accessToken = await getFirebaseAccessToken();
+    final http.Response response = await http.post(
+      Uri.parse(ApiConstants.graphqlUrl), // Replace with your API endpoint
+      headers: {
+        'Content-Type': ApiConstants.contentType,
+        'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+        'x-hasura-admin-secret': ApiConstants.adminSecret,
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'query': doctorIds,
+
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> responseData = json.decode(response.body);
+      List<dynamic> doctors = responseData['data']['doctors'];
+      print('doctors whole data  -  $doctors');
+
+      for (var doctor in doctors) {
+        doctorsList.add({'id': doctor['id'], 'name': doctor['name']});
+      }
+     // print('DOCTOR Name  & Id - $doctorsList');
+
+    } else {
+      throw Exception('Failed to load medical center IDs');
+    }
+  }
+
+  Future fetchDoctorAddress(int id) async {
+    String accessToken = await getFirebaseAccessToken();
+    final http.Response response = await http.post(
+      Uri.parse(ApiConstants.graphqlUrl),
+      headers: {
+        'Content-Type': ApiConstants.contentType,
+        'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+        'x-hasura-admin-secret': ApiConstants.adminSecret,
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'query': getDoctorAddressDetails(id),
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> responseData = json.decode(response.body);
+      List<dynamic> doctorAddresses = responseData['data']['doctor_addresses'];
+
+      List<Map<String, dynamic>> addresses = [];
+
+      for (var doctorAddress in doctorAddresses) {
+        addresses.add({
+          'id': doctorAddress['id'],
+          'address': doctorAddress['address'],
+        });
+      }
+
+      print('DOCTOR ADDRESS - $addresses');
+
+      return addresses;
+
+    } else {
+      throw Exception('Failed to load doctor addresses');
+    }
+  }
+
 
 
 
@@ -93,9 +168,11 @@ class _MemberHealthState extends State<MemberHealth> {
       setState(() {
         memberHealthDetails = healthDetails;
         doctors = memberHealthDetails[0]['member_doctors'] ?? [];
+       // print('doctors - $doctors');
+      //  print('MEMBER MEDICALS - $doctors');
         medicalCenters = memberHealthDetails[0]['member_medical_centers'] ?? [];
-        print('SelectedmedicalcentersId - $medicalCentersId');
-        print('MEDICAL CENTERS - $medicalCenters');
+        //print('SelectedmedicalcentersId - $medicalCentersId');
+        //print('MEDICAL CENTERS - $medicalCenters');
         isLoading = false;
       });
     } else {
@@ -124,6 +201,97 @@ class _MemberHealthState extends State<MemberHealth> {
     );
   }
 
+
+  Future<void> insertDoctorDetails(int memberId, int doctorId, int doctorAddressId) async {
+    String accessToken = await getFirebaseAccessToken();
+
+    final http.Response response = await http.post(
+      Uri.parse(ApiConstants.graphqlUrl),
+      headers: {
+        'Content-Type': ApiConstants.contentType,
+        'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+        'x-hasura-admin-secret': ApiConstants.adminSecret,
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'query': insertDoctorsDetails,
+        'variables': {
+          'member_id': memberId,
+          'doctor_id': doctorId,
+          'doctor_address_id': doctorAddressId,
+        },
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      String responseString = response.body;
+      Map<String, dynamic> responseData = json.decode(responseString);
+      int affectedRows = responseData['data']['insert_member_doctors']['affected_rows'];
+      print(affectedRows);
+      print(responseString);
+
+      if (affectedRows > 0) {
+        // Data successfully inserted
+        selectDoctorId = null;
+        _fetchMemberHealthDetails();
+        Navigator.pop(context, true);
+        print('Data inserted successfully');
+        // ignore: use_build_context_synchronously
+        _showUpdateSnackBar(context, "Doctor details inserted successfully");
+      } else {
+        // Data insert failed
+        print('Failed to insert data');
+      }
+    } else {
+      print('API Error: ${response.reasonPhrase}');
+    }
+  }
+
+
+  Future<void> _updateMemberDoctors(int id, int memberId, int doctorAddressId, int doctorId) async {
+    String accessToken = await getFirebaseAccessToken();
+
+    final http.Response response = await http.post(
+      Uri.parse(ApiConstants.graphqlUrl),
+      headers: {
+        'Content-Type': ApiConstants.contentType,
+        'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+        'x-hasura-admin-secret': ApiConstants.adminSecret,
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'query': updateDoctorDetails,
+        'variables': {
+          'id': id,
+          'member_id': memberId,
+          'doctor_address_id': doctorAddressId,
+          'doctor_id': doctorId,
+        },
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      String responseString = response.body;
+      Map<String, dynamic> responseData = json.decode(responseString);
+      int affectedRows = responseData['data']['update_member_doctors']['affected_rows'];
+      print(affectedRows);
+      print(responseString);
+
+      if (affectedRows > 0) {
+        // Data successfully updated
+        _fetchMemberHealthDetails();
+        Navigator.pop(context, true);
+        print('Data updated successfully');
+        // ignore: use_build_context_synchronously
+        _showUpdateSnackBar(context, "Doctor details updated successfully");
+      } else {
+        // Data update failed
+        print('Failed to update data');
+      }
+    } else {
+      print('API Error: ${response.reasonPhrase}');
+    }
+  }
 
   Future<void> _updateMemberMedicalCenterDetails(int id, int memberId, int medicalCenterId) async {
     String accessToken = await getFirebaseAccessToken();
@@ -175,167 +343,88 @@ class _MemberHealthState extends State<MemberHealth> {
   void _showDoctorInfo(BuildContext context, dynamic doctor) {
     showModalBottomSheet(
       context: context,
-      shape:  RoundedRectangleBorder(
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(
           top: Radius.circular(20.r),
         ),
       ),
-      builder: (BuildContext context) {
-        return Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Details',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-               Divider(
-                height: 12.0.h,
-                thickness: 1,
-              ),
-              ListTile(
-                leading: const Icon(Icons.person),
-                title: const Text('Name'),
-                subtitle: Text(doctor['doctor']['name']),
-              ),
-              ListTile(
-                leading: const Icon(Icons.phone),
-                title: const Text('Mobile Number'),
-                subtitle: Text(doctor['doctor']['mobile_number']),
-              ),
-              ListTile(
-                leading: const Icon(Icons.note),
-                title: const Text('Notes'),
-                subtitle: SingleChildScrollView(
-                  scrollDirection: Axis.vertical,
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxHeight: 100, // Adjust the maximum height as needed
-                    ),
-                    child: Text(doctor['doctor']['notes']),
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.location_on),
-                title: const Text('Address'),
-                subtitle: Text(doctor['doctor']['doctor_addresses'][0]['address']),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-
-  void _editMedicalCenter(BuildContext context, dynamic center) {
-    print('centers - $center');
-    medicalCentersId = center['id'];
-    print(medicalCentersId);
-    selectedMedicalCenterId = center['medical_center']['id'].toString();
-    print(center['medical_center']);
-    print(selectedMedicalCenterId);
-    showModalBottomSheet(
-      context: context,
-      shape:  RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(20.r),
-        ),
-      ),
-      isScrollControlled: true, // Allow the sheet to take up the full screen height
       builder: (BuildContext context) {
         return SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+            padding: const EdgeInsets.all(16),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                 Text(
-                  'Edit Medical Center',
-                  style: TextStyle(
-                    fontSize: 24.sp,
-                    fontWeight: FontWeight.w400,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.only(left: 12.0.h),
+                      child: const Text(
+                        'Details',
+                        style: TextStyle(
+                          fontSize: 30,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () {
+                        Navigator.pop(context, true);
+                        //_createDoctorsAndEditDoctors(context, docdata: doctor, isNewDoctor: false);
+                        _createAndEditItem(context, false, true, doctor);
+                        print('selected doctor - $doctor');
+                        print('Edit Note Button Pressed');
+                      },
+                      icon: const Icon(Icons.edit_note),
+                    ),
+                  ],
                 ),
                 Divider(
                   height: 12.0.h,
                   thickness: 1,
                 ),
-                // Add a DropdownButtonFormField for editing
-                Padding(
-                  padding: EdgeInsets.only(bottom: 100.0.h, top: 12.h),
-                  child: DropdownButtonFormField2<String>(
-                    value: selectedMedicalCenterId, // Set the selected value based on your logic
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        selectedMedicalCenterId = newValue;
-                        print('updated selectedMedicalCenterId - $selectedMedicalCenterId');
-                      });
-                    },
-                    items: medicalCentersList
-                        .map<DropdownMenuItem<String>>((Map<String, dynamic> center) {
-                      return DropdownMenuItem<String>(
-                        value: center['id'].toString(), // Use the ID as the value
-                        child: Text(
-                          center['name'],
-                          style: GoogleFonts.inter(
-                            textStyle: const TextStyle(
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                    dropdownStyleData: DropdownStyleData(
-                      maxHeight: 150.h,
-                     // width: 300.w,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        color: Colors.white,
+                ListTile(
+                  leading: const Icon(Icons.person),
+                  title: const Text('Name'),
+                  subtitle: Text(doctor['doctor']['name']),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.phone),
+                  title: const Text('Mobile Number'),
+                  subtitle: Text(doctor['doctor']['mobile_number']),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.note),
+                  title: const Text('Notes'),
+                  subtitle: SingleChildScrollView(
+                    scrollDirection: Axis.vertical,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxHeight: 100,
                       ),
-                    ),
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                    ),
-                    decoration: InputDecoration(
-                      label: const Text('Select Medical Center'),
-                      hintText: 'Select Medical Center',
-                      filled: true,
-                      fillColor: Colors.white,
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8.0),
-                        borderSide: const BorderSide(color: Colors.grey),
-                      ),
+                      child: Text(doctor['doctor']['notes']),
                     ),
                   ),
                 ),
-               // const SizedBox(height: 24),
-                Padding(
-                  padding: EdgeInsets.only(bottom: 20.0.h),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      _updateMemberMedicalCenterDetails(medicalCentersId,widget.member['id'],int.parse(selectedMedicalCenterId!));
-                      // Add logic to handle the edit operation
-                      Navigator.pop(context); // Close the bottom sheet
-                    },
-                    style: ElevatedButton.styleFrom(
-                      foregroundColor: Colors.white, backgroundColor: Colors.blue, // Change the text color
-                      minimumSize: const Size(double.maxFinite, 50), // Set the button size
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.0.r), // Adjust the border radius as needed
-                      ),
-                      elevation: 3, // Add some shadow
-                    ),
-                    child: const Text(
-                      'Update',
-                      style: TextStyle(fontSize: 16),
-                    ),
-                  ),
+                // Displaying multiple addresses
+                ListView.builder(
+                  shrinkWrap: true,
+                  itemCount: doctor['doctor']['doctor_addresses'].length,
+                  itemBuilder: (BuildContext context, int index) {
+                    bool isMatchingAddress = doctor['doctor_address_id'] ==
+                        doctor['doctor']['doctor_addresses'][index]['id'];
+
+                    return isMatchingAddress
+                        ? ListTile(
+                      leading: const Icon(Icons.location_on),
+                      title: Text('Address ${index + 1}'),
+                      subtitle: Text(
+                          doctor['doctor']['doctor_addresses'][index]['address']),
+                    )
+                        : SizedBox.shrink(); // If it's not a matching address, return an empty SizedBox
+                  },
                 ),
               ],
             ),
@@ -345,6 +434,502 @@ class _MemberHealthState extends State<MemberHealth> {
     );
   }
 
+
+
+  // void _createDoctorsAndEditDoctors(BuildContext context, {dynamic docdata, bool isNewDoctor = false}) {
+  //   print('Doctor - $docdata');
+  //
+  //   if(docdata != null){
+  //    selectDoctorId = docdata['doctor']['id'].toString();
+  //    // medicalCentersId = docdata['id'];
+  //   }
+  //   else{
+  //     selectDoctorId = null;
+  //   }
+  //
+  //   print('selectDoctorId - $selectDoctorId');
+  //   showModalBottomSheet(
+  //     context: context,
+  //     shape:  RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(
+  //         top: Radius.circular(20.r),
+  //       ),
+  //     ),
+  //     isScrollControlled: true, // Allow the sheet to take up the full screen height
+  //     builder: (BuildContext context) {
+  //       return SingleChildScrollView(
+  //         child: Container(
+  //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               Text(
+  //                 isNewDoctor ? 'Assign Doctor' : 'Update Doctor',
+  //                 style: TextStyle(
+  //                   fontSize: 24.sp,
+  //                   fontWeight: FontWeight.w400,
+  //                 ),
+  //               ),
+  //               Divider(
+  //                 height: 12.0.h,
+  //                 thickness: 1,
+  //               ),
+  //               // Add a DropdownButtonFormField for editing
+  //               Padding(
+  //                 padding: EdgeInsets.only(bottom: 100.0.h, top: 12.h),
+  //                 child: DropdownButtonFormField2<String>(
+  //                   value: selectDoctorId, // Set the selected value based on your logic
+  //                   onChanged: (String? newValue) {
+  //                     setState(() {
+  //                       selectDoctorId = newValue;
+  //                       print('new selectDoctorId - $selectDoctorId');
+  //                     });
+  //                   },
+  //                   items: doctorsList
+  //                       .map<DropdownMenuItem<String>>((Map<String, dynamic> doctor) {
+  //                     return DropdownMenuItem<String>(
+  //                       value: doctor['id'].toString(), // Use the ID as the value
+  //                       child: Text(
+  //                         doctor['name'],
+  //                         style: GoogleFonts.inter(
+  //                           textStyle: const TextStyle(
+  //                             color: Colors.black,
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     );
+  //                   }).toList(),
+  //                   dropdownStyleData: DropdownStyleData(
+  //                     maxHeight: 150.h,
+  //                     // width: 300.w,
+  //                     decoration: BoxDecoration(
+  //                       borderRadius: BorderRadius.circular(14),
+  //                       color: Colors.white,
+  //                     ),
+  //                   ),
+  //                   style: TextStyle(
+  //                     fontSize: 16.sp,
+  //                   ),
+  //                   decoration: InputDecoration(
+  //                     label: const Text('Select Doctor'),
+  //                     hintText: 'Select Doctor',
+  //                     filled: true,
+  //                     fillColor: Colors.white,
+  //                     border: OutlineInputBorder(
+  //                       borderRadius: BorderRadius.circular(8.0),
+  //                       borderSide: const BorderSide(color: Colors.grey),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ),
+  //               Padding(
+  //                 padding: EdgeInsets.only(bottom: 20.0.h),
+  //                 child: ElevatedButton(
+  //                   onPressed: () {
+  //
+  //                     if (isNewDoctor) {
+  //                       insertDoctorDetails(widget.member['id'], int.parse(selectDoctorId!));
+  //                     } else {
+  //                       _updateMemberMedicalCenterDetails(medicalCentersId,widget.member['id'],int.parse(selectedMedicalCenterId!));
+  //                     }
+  //                   },
+  //                   style: ElevatedButton.styleFrom(
+  //                     foregroundColor: Colors.white, backgroundColor: Colors.blue, // Change the text color
+  //                     minimumSize: const Size(double.maxFinite, 50), // Set the button size
+  //                     shape: RoundedRectangleBorder(
+  //                       borderRadius: BorderRadius.circular(12.0.r), // Adjust the border radius as needed
+  //                     ),
+  //                     elevation: 3, // Add some shadow
+  //                   ),
+  //                   child: const Text(
+  //                     'Update',
+  //                     style: TextStyle(fontSize: 16),
+  //                   ),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
+  //
+  //
+  // void _createAndEditMedicalCenter(BuildContext context, {dynamic mcdata, bool isNewCenter = false}) {
+  //   print('centers - $mcdata');
+  //
+  //   if(mcdata != null){
+  //     selectedMedicalCenterId = mcdata['medical_center']['id'].toString();
+  //     medicalCentersId = mcdata['id'];
+  //     print(medicalCentersId);
+  //   }
+  //   else{
+  //     selectedMedicalCenterId = null;
+  //   }
+  //   print(selectedMedicalCenterId);
+  //   showModalBottomSheet(
+  //     context: context,
+  //     shape:  RoundedRectangleBorder(
+  //       borderRadius: BorderRadius.vertical(
+  //         top: Radius.circular(20.r),
+  //       ),
+  //     ),
+  //     isScrollControlled: true, // Allow the sheet to take up the full screen height
+  //     builder: (BuildContext context) {
+  //       return SingleChildScrollView(
+  //         child: Container(
+  //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+  //           child: Column(
+  //             mainAxisSize: MainAxisSize.min,
+  //             children: [
+  //               Text(
+  //                 isNewCenter ? 'Create Medical Center' : 'Edit Medical Center',
+  //                 style: TextStyle(
+  //                   fontSize: 24.sp,
+  //                   fontWeight: FontWeight.w400,
+  //                 ),
+  //               ),
+  //               Divider(
+  //                 height: 12.0.h,
+  //                 thickness: 1,
+  //               ),
+  //               // Add a DropdownButtonFormField for editing
+  //               Padding(
+  //                 padding: EdgeInsets.only(bottom: 100.0.h, top: 12.h),
+  //                 child: DropdownButtonFormField2<String>(
+  //                   value: selectedMedicalCenterId, // Set the selected value based on your logic
+  //                   onChanged: (String? newValue) {
+  //                     setState(() {
+  //                       selectedMedicalCenterId = newValue;
+  //                       print('new selectedMedicalCenterId - $selectedMedicalCenterId');
+  //                     });
+  //                   },
+  //                   items: medicalCentersList
+  //                       .map<DropdownMenuItem<String>>((Map<String, dynamic> center) {
+  //                     return DropdownMenuItem<String>(
+  //                       value: center['id'].toString(), // Use the ID as the value
+  //                       child: Text(
+  //                         center['name'],
+  //                         style: GoogleFonts.inter(
+  //                           textStyle: const TextStyle(
+  //                             color: Colors.black,
+  //                           ),
+  //                         ),
+  //                       ),
+  //                     );
+  //                   }).toList(),
+  //                   dropdownStyleData: DropdownStyleData(
+  //                     maxHeight: 150.h,
+  //                     // width: 300.w,
+  //                     decoration: BoxDecoration(
+  //                       borderRadius: BorderRadius.circular(14),
+  //                       color: Colors.white,
+  //                     ),
+  //                   ),
+  //                   style: TextStyle(
+  //                     fontSize: 16.sp,
+  //                   ),
+  //                   decoration: InputDecoration(
+  //                     label: const Text('Select Medical Center'),
+  //                     hintText: 'Select Medical Center',
+  //                     filled: true,
+  //                     fillColor: Colors.white,
+  //                     border: OutlineInputBorder(
+  //                       borderRadius: BorderRadius.circular(8.0),
+  //                       borderSide: const BorderSide(color: Colors.grey),
+  //                     ),
+  //                   ),
+  //                 ),
+  //               ),
+  //               Padding(
+  //                 padding: EdgeInsets.only(bottom: 20.0.h),
+  //                 child: ElevatedButton(
+  //                   onPressed: () {
+  //                     if (isNewCenter) {
+  //                       _createNewMedicalCenter(int.parse(selectedMedicalCenterId!), widget.member['id']);
+  //                     } else {
+  //                       _updateMemberMedicalCenterDetails(medicalCentersId,widget.member['id'],int.parse(selectedMedicalCenterId!));
+  //                     }
+  //                   },
+  //                   style: ElevatedButton.styleFrom(
+  //                     foregroundColor: Colors.white, backgroundColor: Colors.blue, // Change the text color
+  //                     minimumSize: const Size(double.maxFinite, 50), // Set the button size
+  //                     shape: RoundedRectangleBorder(
+  //                       borderRadius: BorderRadius.circular(12.0.r), // Adjust the border radius as needed
+  //                     ),
+  //                     elevation: 3, // Add some shadow
+  //                   ),
+  //                   child: const Text(
+  //                     'Update',
+  //                     style: TextStyle(fontSize: 16),
+  //                   ),
+  //                 ),
+  //               ),
+  //             ],
+  //           ),
+  //         ),
+  //       );
+  //     },
+  //   );
+  // }
+
+  Future<void> _createAndEditItem(BuildContext context, bool isNew, bool isDoctor, dynamic data) async {
+    String? selectedItemId;
+    String? selectedItemId2;
+    String? itemId;
+    List<Map<String, dynamic>> itemList;
+    List<Map<String, dynamic>> itemList2 = [];
+
+    if (isDoctor) {
+      selectedItemId = data != null ? data['doctor']['id']?.toString() : null;
+      selectDoctorId = data != null ? data['id'] : 0;
+      itemId = selectDoctorId.toString();
+      print('selectedItemId - $selectedItemId');
+      print('itemId - $itemId');
+      itemList = doctorsList;
+      List<dynamic> doctorAddresses = data != null ? data['doctor']['doctor_addresses'] : [];
+      itemList2 = doctorAddresses.map((address) => {'id': address['id'], 'address': address['address']}).toList();
+
+      // Call fetchDoctorAddress if a doctor is selected
+    } else {
+      selectedItemId = data != null ? data['medical_center']['id'].toString() : null;
+      data != null ? medicalCentersId = data['id'] : 0;
+      itemId = medicalCentersId.toString();
+      itemList = medicalCentersList;
+    }
+
+
+    //this causes error for editing
+    // if (isDoctor && selectedItemId != null) {
+    //   itemList2 = await fetchDoctorAddress(int.parse(selectedItemId));
+    // }
+
+
+    // ignore: use_build_context_synchronously
+    showModalBottomSheet(
+      context: context,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(20.r),
+        ),
+      ),
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return SingleChildScrollView(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      isNew ? (isDoctor ? 'Assign Doctor' : 'Create Medical Center') : (isDoctor ? 'Update Doctor' : 'Edit Medical Center'),
+                      style: TextStyle(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                    Divider(
+                      height: 12.0.h,
+                      thickness: 1,
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 100.h, top: 12.h),
+                      child: Column(
+                        children: [
+                          DropdownButtonFormField2<String>(
+                            value: selectedItemId,
+                            onChanged: (String? newValue) async {
+                              setState(() {
+                                selectedItemId = newValue;
+                                if (isDoctor && selectedItemId != null) {
+                                  fetchDoctorAddress(int.parse(selectedItemId!)).then((addresses) {
+                                    setState(() {
+                                      itemList2 = addresses;
+                                      selectedItemId2 = null; // Reset selectedItemId2 when selecting a new doctor
+                                    });
+                                  });
+                                }
+                                print('new selectedItemId - $selectedItemId');
+                              });
+                            },
+
+                            items: itemList.map<DropdownMenuItem<String>>((Map<String, dynamic> item) {
+                              return DropdownMenuItem<String>(
+                                value: item['id'].toString(),
+                                child: Text(
+                                  item['name'],
+                                  style: GoogleFonts.inter(
+                                    textStyle: const TextStyle(
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                            dropdownStyleData: DropdownStyleData(
+                              maxHeight: 150.h,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(14),
+                                color: Colors.white,
+                              ),
+                            ),
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                            ),
+                            decoration: InputDecoration(
+                              label: Text(isDoctor ? 'Select Doctor' : 'Select Medical Center'),
+                              hintText: isDoctor ? 'Select Doctor' : 'Select Medical Center',
+                              filled: true,
+                              fillColor: Colors.white,
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(8.0),
+                                borderSide: const BorderSide(color: Colors.grey),
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 12.h,),
+                          isDoctor
+                              ? Visibility(
+                            visible: selectedItemId != null,
+                            child: DropdownButtonFormField2<String>(
+                              value: selectedItemId2 ?? null,
+                                onChanged: (String? newValue) {
+                                setState(() {
+                                  selectedItemId2 = newValue;
+                                  print('new selectedItemId2 - $selectedItemId2');
+                                  print('itemList2 - $itemList2');
+                                  print('selectedItemId2 - $selectedItemId2');
+                                });
+                              },
+                              items: itemList2.map<DropdownMenuItem<String>>((Map<String, dynamic> item) {
+                                return DropdownMenuItem<String>(
+                                  value: item['id'].toString(),
+                                  child: Text(
+                                    item['address'],
+                                    style: GoogleFonts.inter(
+                                      textStyle: const TextStyle(
+                                        color: Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
+                              dropdownStyleData: DropdownStyleData(
+                                maxHeight: 150.h,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  color: Colors.white,
+                                ),
+                              ),
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                              ),
+                              decoration: InputDecoration(
+                                label: const Text('Select Doctor Address'),
+                                hintText: 'Select Doctor Address',
+                                filled: true,
+                                fillColor: Colors.white,
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(8.0),
+                                  borderSide: const BorderSide(color: Colors.grey),
+                                ),
+                              ),
+                            ),
+                          )
+                              : const SizedBox(),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 20.0.h),
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (isDoctor) {
+                            if (isNew) {
+                              insertDoctorDetails(widget.member['id'], int.parse(selectedItemId!), int.parse(selectedItemId2!));
+
+                            } else {
+                              _updateMemberDoctors(int.parse(itemId!), widget.member['id'], int.parse(selectedItemId2!), int.parse(selectedItemId!));
+                            }
+                          } else {
+                            if (isNew) {
+                              _createNewMedicalCenter(int.parse(selectedItemId!), widget.member['id']);
+                            } else {
+                              _updateMemberMedicalCenterDetails(int.parse(itemId!), widget.member['id'], int.parse(selectedItemId!));
+                            }
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          foregroundColor: Colors.white,
+                          backgroundColor: Colors.blue,
+                          minimumSize: const Size(double.maxFinite, 50),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.0.r),
+                          ),
+                          elevation: 3,
+                        ),
+                        child: const Text(
+                          'Update',
+                          style: TextStyle(fontSize: 16),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+
+
+
+  Future<void> _createNewMedicalCenter(int selectedMedicalCenterId, int memberId) async {
+    String accessToken = await getFirebaseAccessToken();
+
+    final http.Response response = await http.post(
+      Uri.parse(ApiConstants.graphqlUrl),
+      headers: {
+        'Content-Type': ApiConstants.contentType,
+        'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+        'x-hasura-admin-secret': ApiConstants.adminSecret,
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'query': insertMemberMedicalCenter,
+        'variables': {
+          'medical_center_id': selectedMedicalCenterId,
+          'member_id': memberId,
+        },
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      String responseString = response.body;
+      Map<String, dynamic> responseData = json.decode(responseString);
+      int affectedRows = responseData['data']['insert_member_medical_center']['affected_rows'];
+      print(affectedRows);
+      print(responseString);
+
+      if (affectedRows > 0) {
+        // Data successfully inserted
+        _fetchMemberHealthDetails();
+        Navigator.pop(context, true);
+        print('Data inserted successfully');
+        _showUpdateSnackBar(context, "Medical Center inserted successfully");
+      } else {
+        // Data insertion failed
+        print('Failed to insert data');
+      }
+    } else {
+      print('API Error: ${response.reasonPhrase}');
+    }
+  }
 
 
 
@@ -378,12 +963,14 @@ class _MemberHealthState extends State<MemberHealth> {
                   ),
                   IconButton(
                     onPressed: ()  {
+                      Navigator.pop(context, true);
                       print('Edit Note Button Pressed'); // Add this line
-                      _editMedicalCenter(context, center);
+                      //_createAndEditMedicalCenter(context, mcdata: center, isNewCenter: false);
+                      _createAndEditItem(context, false, false, center);
+
                     },
                     icon: const Icon(Icons.edit_note),
                   ),
-
                 ],
               ),
                Divider(
@@ -488,48 +1075,88 @@ class _MemberHealthState extends State<MemberHealth> {
             ),
           ),
           Container(
-            height: 200.0.h, // Set a fixed height
+            height: 250.h, // Set a fixed height
             margin: EdgeInsets.all(10.0.h),
             padding: EdgeInsets.all(8.0.h),
             decoration: BoxDecoration(
               color: Colors.grey[200],
               borderRadius: BorderRadius.circular(20.0.r),
             ),
-            child: Scrollbar(
-              child: doctors.isEmpty
-                  ? Center(
-                child: Text(
-                  'No doctors information available',
-                  style: TextStyle(fontSize: 14.sp),
-                ),
-              )
-                  : ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                itemCount: doctors.length,
-                itemBuilder: (context, index) {
-                  dynamic doctor = doctors[index];
-                  return InkWell(
-                    onTap: () {
-                      _showDoctorInfo(context, doctor);
+            child: Column(
+              children: [
+                // Button that looks like a list tile
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 3.0.h),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      print('button clicked');
+                      // _createDoctorsAndEditDoctors(context, docdata: null, isNewDoctor: true);
+                      _createAndEditItem(context, true, true, null);
+
+                      // Add your create medical center logic here
                     },
-                    splashColor: Colors.blue,
-                    highlightColor: Colors.blue,
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 1.0),
-                      child: ListTile(
-                        title: Text(
-                          doctor['doctor']['name'] ?? 'N/A',
-                          style: TextStyle(fontSize: 14.sp),
-                        ),
-                        trailing: Icon(
-                          Icons.arrow_forward_ios_outlined,
-                          size: 12.0.h,
-                        ),
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.black87, backgroundColor: Colors.white,
+                      elevation: 0, // Remove the button elevation
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.0.r),
                       ),
                     ),
-                  );
-                },
-              ),
+                    child: ListTile(
+                      title: Text(
+                        'Create New',
+                        style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w500),
+                      ),
+                      trailing: Icon(
+                        Icons.add,
+                        size: 20.0.h,
+                        color: Colors.black54 ,
+                        //semanticLabel: 'Create New Medical Center', // Optional label for accessibility
+                        textDirection: TextDirection.ltr, // Optional text direction
+                      ),
+                    ),
+                  ),
+                ),
+                // Scrollable list of medical centers
+                Expanded(
+                  child: Scrollbar(
+                    child: doctors.isEmpty
+                        ? Center(
+                      child: Text(
+                        'No doctors information available',
+                        style: TextStyle(fontSize: 14.sp),
+                      ),
+                    )
+                        : ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: doctors.length,
+                      itemBuilder: (context, index) {
+                        dynamic doctor = doctors[index];
+                        return InkWell(
+                          onTap: () {
+                            _showDoctorInfo(context, doctor);
+                          },
+                          splashColor: Colors.blue,
+                          highlightColor: Colors.blue,
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 1.0, horizontal: 1.0),
+                            child: ListTile(
+                              title: Text(
+                                doctor['doctor']['name'] ?? 'N/A',
+                                style: TextStyle(fontSize: 14.sp),
+                              ),
+                              trailing: Icon(
+                                Icons.arrow_forward_ios_outlined,
+                                size: 12.0.h,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Padding(
@@ -540,46 +1167,87 @@ class _MemberHealthState extends State<MemberHealth> {
             ),
           ),
           Container(
-            height: 200.h, // Set a fixed height
+            height: 250.h, // Set a fixed height
             margin: EdgeInsets.all(10.0.h),
             padding: EdgeInsets.all(8.0.h),
             decoration: BoxDecoration(
               color: Colors.grey[200],
               borderRadius: BorderRadius.circular(20.0.r),
             ),
-            child: Scrollbar(
-              child: medicalCenters.isEmpty
-                  ? Center(
-                child: Text(
-                  'No medical center information available',
-                  style: TextStyle(fontSize: 14.sp),
-                ),
-              )
-                  : ListView.builder(
-                physics: const BouncingScrollPhysics(),
-                itemCount: medicalCenters.length,
-                itemBuilder: (context, index) {
-                  dynamic center = medicalCenters[index];
-                  return InkWell(
-                    onTap: () {
-                      _showMedicalCenterInfo(context, center);
+            child: Column(
+              children: [
+                // Button that looks like a list tile
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 3.0.h),
+                  child: ElevatedButton(
+                    onPressed: () {
+                      print('button clicked');
+                     // _createAndEditMedicalCenter(context, mcdata: null, isNewCenter: true);
+                      _createAndEditItem(context, true, false, null);
+
+
+                      // Add your create medical center logic here
                     },
-                    child: Container(
-                      margin: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: ListTile(
-                        title: Text(
-                          center['medical_center']['name'] ?? 'N/A',
-                          style: TextStyle(fontSize: 14.sp),
-                        ),
-                        trailing:  Icon(
-                          Icons.arrow_forward_ios_outlined,
-                          size: 12.0.h,
-                        ),
+                    style: ElevatedButton.styleFrom(
+                      foregroundColor: Colors.black87, backgroundColor: Colors.white,
+                      elevation: 0, // Remove the button elevation
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.0.r),
                       ),
                     ),
-                  );
-                },
-              ),
+                    child: ListTile(
+                      title: Text(
+                        'Create New',
+                        style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w500),
+                      ),
+                      trailing: Icon(
+                        Icons.add,
+                        size: 20.0.h,
+                        color: Colors.black54 ,
+                        semanticLabel: 'Create New Medical Center', // Optional label for accessibility
+                        textDirection: TextDirection.ltr, // Optional text direction
+                      ),
+                    ),
+                  ),
+                ),
+                // Scrollable list of medical centers
+                Expanded(
+                  child: Scrollbar(
+                    child: medicalCenters.isEmpty
+                        ? Center(
+                      child: Text(
+                        'No medical center information available',
+                        style: TextStyle(fontSize: 14.sp),
+                      ),
+                    )
+                        : ListView.builder(
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: medicalCenters.length,
+                      itemBuilder: (context, index) {
+                        dynamic center = medicalCenters[index];
+                        return InkWell(
+                          onTap: () {
+                            _showMedicalCenterInfo(context, center);
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.symmetric(vertical: 4.0),
+                            child: ListTile(
+                              title: Text(
+                                center['medical_center']['name'] ?? 'N/A',
+                                style: TextStyle(fontSize: 14.sp),
+                              ),
+                              trailing: Icon(
+                                Icons.arrow_forward_ios_outlined,
+                                size: 12.0.h,
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           Padding(
