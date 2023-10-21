@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -581,7 +582,7 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                         ),
                       ),
                     )),
-                    buildInfoRow( 'Status', DropdownButtonFormField<int>(
+                    buildInfoRow( 'Status', DropdownButtonFormField2<int>(
                       focusNode: _dropdownFocusNode,
                       value: selectedTaskStatusTypeId ?? widget.task['task_status_type_id'],
                       items: taskStatusTypes.map((statusType) {
@@ -601,6 +602,14 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                           ),
                         );
                       }).toList(),
+                      dropdownStyleData: DropdownStyleData(
+                        maxHeight: 200.h,
+                        width: 200.w,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          color: Colors.white,
+                        ),
+                      ),
                       onChanged: (newValue) {
                         setState(() {
                           _dropdownFocusNode.unfocus();
@@ -619,9 +628,16 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                         ),
                       ),
                     ),),
-                    buildInfoRow( 'Service \nProvider', DropdownButtonFormField<int>(
-                      hint: Text(widget.task['service_provider']['service_provider_type']['name'],style: TextStyle(fontWeight: FontWeight.normal),),
-                      value:null,//widget.task['service_provider']['service_provider_type']['id'],
+                    buildInfoRow( 'Service \nProvider', DropdownButtonFormField2<int>(
+                      hint: SizedBox(
+                         // Set a fixed width for the hint text
+                        child: Text(
+                          widget.task['service_provider']['service_provider_type']['name'],
+                          style: TextStyle(fontWeight: FontWeight.normal),
+                          maxLines: 1, // Limit to one line
+                          overflow: TextOverflow.ellipsis, // Handle overflow with ellipsis
+                        ),
+                      ),                      value:null,//widget.task['service_provider']['service_provider_type']['id'],
                       items: distinctServiceProviderTypes.map((provider) {
                         final serviceProviderId = provider['id'] as int;
                         final serviceProviderTypeName = provider['service_provider_type']['name'] as String;
@@ -630,9 +646,24 @@ class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
                         //print(provider['service_provider_type_id']);
                         return DropdownMenuItem<int>(
                           value: serviceProviderId,
-                          child: Text(serviceProviderTypeName),
+                          child: SizedBox(
+                            width: 200.w, // Set a fixed width for the DropdownMenuItem
+                            child: Text(
+                              serviceProviderTypeName,
+                              maxLines: 1, // Limit to one line
+                              overflow: TextOverflow.ellipsis, // Handle overflow with ellipsis
+                            ),
+                          ),
                         );
                       }).toList(),
+                      dropdownStyleData: DropdownStyleData(
+                        maxHeight: 200.h,
+                        width: 200.w,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          color: Colors.white,
+                        ),
+                      ),
                       onChanged: (newValue) {
                         setState(() {
                           serviceProviderId = newValue;

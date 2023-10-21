@@ -8,6 +8,7 @@ class AccessToken {
   Future<void> getFirebaseAccessToken(User? user) async {
     try {
       if (user != null) {
+        String uid = user.uid;
         String? accessToken = await user.getIdToken();
         final idTokenResult = await user.getIdTokenResult();
         //final refreshToken = await user.getIdToken(true);
@@ -19,6 +20,8 @@ class AccessToken {
         if (accessToken != null) {
           final prefs = await SharedPreferences.getInstance();
           await prefs.setString('firebaseAccessToken', accessToken);
+          prefs.setString('uid', uid);
+          print('uid - $uid');
           print('StoredAccessToken - $accessToken');
         }
       }
@@ -41,7 +44,7 @@ class AccessToken {
   }
 
   void setupAccessTokenRefresh(User user) {
-    Timer.periodic(Duration(minutes: 50), (timer) {
+    Timer.periodic(const Duration(minutes: 50), (timer) {
       refreshAccessToken(user);
     });
   }

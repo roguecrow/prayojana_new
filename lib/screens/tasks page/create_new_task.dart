@@ -429,6 +429,36 @@ class _CreateTaskState extends State<CreateTask> {
   }
 
 
+  Widget buildInfoColumn(Widget content, IconData iconData) {
+    return Padding(
+      padding: EdgeInsets.only( left: 20.w,top: 20.h),
+      child:
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                iconData, // Add the desired icon
+                size: 20.sp, // Adjust the size as needed
+                color: const Color(0xff999999),
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(left: 16.w),
+                  child: Container(
+                    child: content,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+
   @override
   void dispose() {
     _taskTitleController.dispose();
@@ -532,6 +562,72 @@ class _CreateTaskState extends State<CreateTask> {
               //       );
               //     }).toList(),
               //   ),
+
+              Padding(
+                padding: const EdgeInsets.only(right: 20.0),
+                child: buildInfoColumn(InputDecorator(
+                  decoration: InputDecoration(
+                    //labelText: 'Select Member*',
+                    labelStyle: TextStyle(fontSize: 16.sp),
+                    border: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                  ),
+                  child: DropdownButtonHideUnderline(
+                    child: DropdownButton2<Member>(
+                      hint: const Text('Select Member*'),
+                      isExpanded: true,
+                      value: _selectedMember,
+                      onChanged: (Member? selectedMember) {
+                        if (selectedMember != null) {
+                          _handleMemberSelection(selectedMember);
+                          setState(() {
+                            _selectedMember = selectedMember;
+                          });
+                        }
+                      },
+                      items: _availableMembers.map((Member member) {
+                        return DropdownMenuItem<Member>(
+                          value: member,
+                          child: Text(member.name),
+                        );
+                      }).toList(),
+                      dropdownStyleData: DropdownStyleData(
+                        maxHeight: 250.h,
+                        width: 250.w,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          color: Colors.white,
+                        ),
+                      ),
+                      selectedItemBuilder: (BuildContext context) {
+                        return _availableMembers.map<Widget>((Member member) {
+                          return Align(
+                            alignment: Alignment.centerLeft,
+                            child: Chip(
+                              backgroundColor: Color(0xffe1f2ff),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8.0), // Adjust the radius to make it more squared
+                              ),
+                              label: Text(
+                                member.name,
+                                style: const TextStyle(
+                                  color: Color(0xff374151),// Customize the color as needed
+                                ),
+                              ),
+                              // onDeleted: () {
+                              //   setState(() {
+                              //     _selectedMembers.remove(member);
+                              //   });
+                              // },
+                            ),
+                          );
+                        }).toList();
+                      },
+                    ),
+                  ),
+                ),Icons.bolt,),
+              ),
               Padding(
                 padding: EdgeInsets.symmetric(horizontal: 20.0.w),
                 child: Column(
@@ -547,7 +643,7 @@ class _CreateTaskState extends State<CreateTask> {
                       ),
                       child: DropdownButtonHideUnderline(
                         child: DropdownButton2<Member>(
-                          hint: const Text('Select Member'),
+                          hint: const Text('Select Member*'),
                           isExpanded: true,
                           value: _selectedMember,
                           onChanged: (Member? selectedMember) {

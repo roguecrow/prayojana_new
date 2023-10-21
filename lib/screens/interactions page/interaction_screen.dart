@@ -3,12 +3,15 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
   import 'package:http/http.dart' as http;
   import 'package:intl/intl.dart';
   import 'package:prayojana_new/screens/interactions%20page/update_interaction_details.dart';
+import 'package:prayojana_new/screens/interactions%20page/update_interaction_details_new.dart';
   import '../../drawer_items.dart';
   import '../../graphql_queries.dart';
   import '../../services/api_service.dart';
   import 'create_new_interaction.dart';
   import 'package:prayojana_new/constants.dart';
   import 'dart:convert';
+
+import 'create_new_interaction_new.dart';
 
   class InteractionScreen extends StatefulWidget {
     const InteractionScreen({super.key});
@@ -233,6 +236,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
                             ),
                           ),
                         ),
+                        trailing:  Padding(
+                          padding: EdgeInsets.only(bottom: 38.0.h),
+                          child: const Icon(Icons.arrow_forward_ios_rounded),
+                        ),
+
                         onTap: () {
                           _navigateToInteractionDetailsScreen(interactionMember); // Pass the selected interaction data
                         },
@@ -262,7 +270,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
       final shouldUpdate = await Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => InteractionDetailsScreen(
+          builder: (context) => InteractionDetailsScreenNew(
             selectedInteractionMember: interactionMember,
           ),
         ),
@@ -273,7 +281,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
     void _navigateToCreateInteractionScreen() async {
       final shouldCreate= await Navigator.push(
         context,
-        MaterialPageRoute(builder: (context) => const CreateInteraction()),
+        MaterialPageRoute(builder: (context) => const CreateInteractionNew()),
       );
       if (shouldCreate == true) {
         // Refresh the task data after updating

@@ -28,33 +28,35 @@ class _MemberDrawerState extends State<MemberDrawer> {
   Widget build(BuildContext context) {
     var container , title;
     if (currentPage == DrawerSections.profile) {
-      title = Text('Member Profile');
+      title = Text('Member Profile',style: TextStyle(fontSize: 20.0.sp),);
       container = MemberProfile(member: member); // Pass member data to MemberHealth
-    } else if (currentPage == DrawerSections.health) {
-      title = Text('Member Health');
+    }
+    else if (currentPage == DrawerSections.health) {
+      title = Text('Member Health',style: TextStyle(fontSize: 20.0.sp));
       container = MemberHealth(member: member); // Pass member data to MemberDashboard (if needed)
-    } else if (currentPage == DrawerSections.reports) {
-      title = Text('Member Report');
+    }
+    else if (currentPage == DrawerSections.reports) {
+      title = Text('Member Report',style: TextStyle(fontSize: 20.0.sp));
       container = MemberReport(member: member); // Pass member data to MemberReport (if needed)
     }
     else if (currentPage == DrawerSections.notes) {
-      title = Text('Member Summaries');
+      title = Text('Member Summaries',style: TextStyle(fontSize: 20.0.sp));
       container = MemberNotes(member: member);
     }
     else if (currentPage == DrawerSections.assistance) {
-      title = Text('Member Assistance');
+      title = Text('Member Assistance',style: TextStyle(fontSize: 20.0.sp));
       container = MemberAssistance(member: member);
     }
     else if (currentPage == DrawerSections.documents) {
-      title = Text('Member Documents');
+      title = Text('Member Documents',style: TextStyle(fontSize: 20.0.sp));
       container = MemberDocuments(member: member);
     }
     else if (currentPage == DrawerSections.prayojanaprofile) {
-      title = Text('Prayojana Profile');
+      title = Text('Prayojana Profile',style: TextStyle(fontSize: 20.0.sp));
       container = MemberPrayojanaProfile(member: member);
     }
     else if (currentPage == DrawerSections.interests) {
-      title = Text('Member Interest');
+      title = Text('Member Interest',style: TextStyle(fontSize: 20.0.sp));
       container = MemberInterest(member: member);
     }
     return Scaffold(
@@ -87,7 +89,7 @@ class _MemberDrawerState extends State<MemberDrawer> {
 
   Widget MyDrawerList() {
     return Container(
-      padding: EdgeInsets.only(
+      padding: const EdgeInsets.only(
         top: 15,
       ),
       child: Column(
@@ -105,20 +107,21 @@ class _MemberDrawerState extends State<MemberDrawer> {
               currentPage == DrawerSections.assistance ? true : false),
           menuItem(6, "Prayojana Profile", Icons.account_circle_outlined,
               currentPage == DrawerSections.prayojanaprofile ? true : false),
+          const Divider(),
           menuItem(7, "Documents", Icons.file_present_outlined,
               currentPage == DrawerSections.documents ? true : false),
           menuItem(8, "Interests", Icons.interests_outlined,
               currentPage == DrawerSections.interests ? true : false),
-          Divider(),
-          menuItem(9, "Settings", Icons.settings_outlined,
-              currentPage == DrawerSections.settings ? true : false),
-          menuItem(10, "Notifications", Icons.notifications_outlined,
-              currentPage == DrawerSections.notifications ? true : false),
-          Divider(),
-          menuItem(11, "Privacy policy", Icons.privacy_tip_outlined,
-              currentPage == DrawerSections.privacy_policy ? true : false),
-          menuItem(12, "Send feedback", Icons.feedback_outlined,
-              currentPage == DrawerSections.send_feedback ? true : false),
+          const Divider(),
+          // menuItem(9, "Settings", Icons.settings_outlined,
+          //     currentPage == DrawerSections.settings ? true : false),
+          // menuItem(10, "Notifications", Icons.notifications_outlined,
+          //     currentPage == DrawerSections.notifications ? true : false),
+          // Divider(),
+          // menuItem(11, "Privacy policy", Icons.privacy_tip_outlined,
+          //     currentPage == DrawerSections.privacy_policy ? true : false),
+          // menuItem(12, "Send feedback", Icons.feedback_outlined,
+          //     currentPage == DrawerSections.send_feedback ? true : false),
         ],
       ),
     );
@@ -159,13 +162,13 @@ class _MemberDrawerState extends State<MemberDrawer> {
           });
         },
         child: Padding(
-          padding: EdgeInsets.all(15.0),
+          padding: EdgeInsets.only(top: 12.0.h ,right: 12.0.h,bottom: 12.0.h),
           child: Row(
             children: [
               Expanded(
                 child: Icon(
                   icon,
-                  size: 20,
+                  size: 16.h,
                   color: Colors.black,
                 ),
               ),
@@ -175,7 +178,7 @@ class _MemberDrawerState extends State<MemberDrawer> {
                   title,
                   style: TextStyle(
                     color: Colors.black,
-                    fontSize: 16,
+                    fontSize: 14.sp,
                   ),
                 ),
               ),

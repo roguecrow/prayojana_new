@@ -160,13 +160,13 @@ class _MemberAssistanceState extends State<MemberAssistance> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: isLoading
-          ? const Center(
-        child:  SizedBox(
-          height: 50,
-          width: 50,
-          child: LoadingIndicator(
-            indicatorType: Indicator.ballPulseSync, /// Required, The loading type of the widget
-            colors: [Color(0xff006bbf)],       /// Optional, The color collections
+          ? Center(
+        child: SizedBox(
+          height: 40.h,
+          width: 40.w,
+          child: const LoadingIndicator(
+            indicatorType: Indicator.ballPulseSync,
+            colors: [Color(0xff006bbf)],
           ),
         ),
       )

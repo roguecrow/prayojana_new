@@ -69,8 +69,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
 
   Future<void> verifyPhone(String number) async {
+    print('number : $number');
     setState(() {
       isOtpButtonDisabled = true;
+
     });
 
     await FirebaseAuth.instance.verifyPhoneNumber(
@@ -109,6 +111,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         showSnackBarText("Timeout!");
       },
     ).whenComplete(() {
+      print('otp sent');
       if (mounted) {
         setState(() {
           isOtpButtonDisabled = false;
@@ -138,6 +141,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ),
         );
       } else {
+        print(response.body);
         showSnackBarText("User does not exist.");
       }
     }).whenComplete(() {
@@ -228,7 +232,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           style: GoogleFonts.inter(
                             textStyle: Theme.of(context).textTheme.displayLarge,
                             fontSize: 22.sp,
-                            fontWeight: FontWeight.w700,
+                            fontWeight: FontWeight.w500,
                             fontStyle: FontStyle.normal,
                             color: const Color(0xff000000),
                             height: 18.h / 22.h,

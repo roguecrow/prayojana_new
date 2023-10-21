@@ -103,7 +103,7 @@ class MemberApi {
     return response;
   }
 
-  Future<List<dynamic>?> fetchTaskMembersData() async {
+  Future<List<dynamic>?> fetchTaskMembersData(int page) async {
     String accessToken = await getFirebaseAccessToken();
     var headers = {
       'Content-Type': ApiConstants.contentType,
@@ -114,7 +114,7 @@ class MemberApi {
 
     var request = http.Request(
       'POST',
-      Uri.parse(ApiConstants.taskUrl),
+      Uri.parse(ApiConstants.taskUrl(page)),
     );
 
     request.headers.addAll(headers);

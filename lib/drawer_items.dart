@@ -16,7 +16,7 @@ class AppDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       child: Container(
-        color: const Color(0xff006bbf),
+        color: const Color(0xff798fa0),
         child: ListView(
           children: [
             const DrawerHeader(

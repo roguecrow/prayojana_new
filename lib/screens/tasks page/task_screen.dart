@@ -1,9 +1,13 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:prayojana_new/screens/tasks%20page/create_new_task.dart';
+import 'package:prayojana_new/screens/tasks%20page/update_task_details_new.dart';
 import 'package:prayojana_new/services/api_service.dart';
 import '../../drawer_items.dart';
+import 'create_new_task_new.dart';
 import 'update_task_details.dart';
 
 class TaskScreen extends StatefulWidget {
@@ -14,7 +18,11 @@ class TaskScreen extends StatefulWidget {
 }
 
 class _TaskScreenState extends State<TaskScreen> {
+  final scrollController = ScrollController();
+  bool isLoadingMore = false;
   List<dynamic>? _taskData;
+  int page = 1;
+
   final List<DrawerItem> _drawerItems = [
     DrawerItem(
       icon: const Icon(Icons.list, color: Colors.white),
@@ -45,16 +53,39 @@ class _TaskScreenState extends State<TaskScreen> {
   @override
   void initState() {
     super.initState();
+    scrollController.addListener(_scrollListener);
     fetchTaskData();
+  }
+
+  Future<void> _scrollListener() async {
+    if(scrollController.position.pixels == scrollController.position.maxScrollExtent){
+      setState(() {
+        isLoadingMore = true;
+      });
+      page = page + 1;
+      await fetchTaskData();
+      setState(() {
+        isLoadingMore = false;
+      });
+    }
+    else
+      {
+        print('don\'t call');
+      }
   }
 
   Future<void> fetchTaskData() async {
     MemberApi memberApi = MemberApi();
-    List<dynamic>? tasks = await memberApi.fetchTaskMembersData();
+    List<dynamic>? newTasks = await memberApi.fetchTaskMembersData(page);
     setState(() {
-      _taskData = tasks;
+      if (_taskData != null) {
+        _taskData!.addAll(newTasks ?? []);
+      } else {
+        _taskData = newTasks;
+      }
     });
   }
+
 
   String formatDueDate(String dueDate) {
     final originalFormat = DateFormat('yyyy-MM-dd');
@@ -147,74 +178,81 @@ class _TaskScreenState extends State<TaskScreen> {
             child: _taskData == null
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.separated(
+              physics: const BouncingScrollPhysics(),
+              controller: scrollController,
               itemBuilder: (context, index) {
-                var taskEntry = _taskData![index];
-                if (taskEntry != null && taskEntry.containsKey('task')) {
-                  var task = taskEntry['task'];
-                  if (task != null && task.containsKey('task_title') && task.containsKey('user')) {
-                    var taskTitle = task['task_title'] as String?;
-                    var userName = task['user']['name'] as String?;
+                if (_taskData != null && index < _taskData!.length) {
+                  var taskEntry = _taskData![index];
+                  if (taskEntry != null && taskEntry.containsKey('task')) {
+                    var task = taskEntry['task'];
+                    if (task != null && task.containsKey('task_title') && task.containsKey('user')) {
+                      var taskTitle = task['task_title'] as String?;
+                      var userName = task['user']['name'] as String?;
 
-                    return SizedBox(
-                      height: 80.h, // Adjust the height as needed
-                      child: ListTile(
-                        title: Text(
-                          taskTitle ?? 'N/A',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w600,
-                            color: task['task_status_type_id'] == 1
-                                ? Color(int.parse('0xFF${task['task_status_type']['color'].substring(1)}'))
-                                : null,
+                      return SizedBox(
+                        height: 80.h, // Adjust the height as needed
+                        child: ListTile(
+                          title: Text(
+                            taskTitle ?? 'N/A',
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: task['task_status_type_id'] == 1
+                                  ? Color(int.parse('0xFF${task['task_status_type']['color'].substring(1)}'))
+                                  : null,
+                            ),
                           ),
-                        ),
-                        subtitle: Padding(
-                          padding: EdgeInsets.only(top: 15.0.h),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                     SizedBox(height: 8.h),
-                                    Text(
-                                      'Due ${task['due_date'] != null ? 'Due ${formatDueDate(task['due_date'])}' : 'N/A'}',
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w400,
+                          subtitle: Padding(
+                            padding: EdgeInsets.only(top: 15.0.h),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      SizedBox(height: 8.h),
+                                      Text(
+                                        'Due ${task['due_date'] != null ? 'Due ${formatDueDate(task['due_date'])}' : 'N/A'}',
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w400,
+                                        ),
                                       ),
-                                    ),
-                                     SizedBox(height: 4.h),
-                                    Text(
-                                      'assigned by ${userName ?? 'N/A'}',
-                                      style: TextStyle(
-                                        fontSize: 14.sp,
-                                        fontWeight: FontWeight.w400,
+                                      SizedBox(height: 4.h),
+                                      Text(
+                                        'assigned by ${userName ?? 'N/A'}',
+                                        style: TextStyle(
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w400,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
-                              ),
-                              Padding(
-                                padding: EdgeInsets.only(bottom: 38.0.h),
-                                child: Transform.translate(
-                                  offset: const Offset(0, -8),
-                                  child: const Icon(Icons.arrow_forward_ios_rounded),
+                                Padding(
+                                  padding: EdgeInsets.only(bottom: 38.0.h),
+                                  child: Transform.translate(
+                                    offset: const Offset(0, -8),
+                                    child: const Icon(Icons.arrow_forward_ios_rounded),
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
+                          onTap: () {
+                            _navigateToTaskDetailsScreen(task);
+                            print('clicked task : $task');
+                          },
                         ),
-                        onTap: () {
-                          _navigateToTaskDetailsScreen(task);
-                          print('clicked task : $task');
-                        },
-                      ),
-                    );
+                      );
+                    }
                   }
+                  // If the task data is missing or doesn't match the expected structure
+                  return SizedBox();
+                  // Access _taskData[index] here
+                } else {
+                  // Handle the case where _taskData or the index is invalid
                 }
-                // If the task data is missing or doesn't match the expected structure
-                return SizedBox();
               },
               separatorBuilder: (context, index) => const Divider(
                 thickness: 2,
@@ -222,9 +260,11 @@ class _TaskScreenState extends State<TaskScreen> {
                 endIndent: 20,
                 // ... (divider configuration remains the same)
               ),
-              itemCount: _taskData!.length,
+              itemCount: isLoadingMore ? _taskData!.length + 1 : _taskData!.length,
             ),
           ),
+          if (isLoadingMore)
+            const Center(child: LinearProgressIndicator()),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
@@ -242,15 +282,14 @@ class _TaskScreenState extends State<TaskScreen> {
   void _navigateToTaskDetailsScreen(dynamic task) async {
     final shouldUpdate = await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => TaskDetailsScreen(task: task)),
+      MaterialPageRoute(builder: (context) => NewTaskDetailsScreen(task: task)),
     );
-
       fetchTaskData();
   }
   void _navigateToCreateTaskScreen() async {
     final shouldCreate= await Navigator.push(
       context,
-      MaterialPageRoute(builder: (context) => const CreateTask()),
+      MaterialPageRoute(builder: (context) => const CreateTaskNew()),
     );
 
     if (shouldCreate == true) {

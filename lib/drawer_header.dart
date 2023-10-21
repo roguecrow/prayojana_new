@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 class HeaderDrawer extends StatefulWidget {
   final Map<String, dynamic> member;
@@ -41,14 +42,14 @@ class _HeaderDrawerState extends State<HeaderDrawer> {
                   : null, // No image provided, set image to null
             ),
             child: widget.member['imagePath'] == null || widget.member['imagePath'] == ''
-                ? Icon(Icons.person, size: 70, color: Colors.white) // Show profile icon if no image
+                ? Icon(Icons.person, size: 50.h, color: Colors.white) // Show profile icon if no image
                 : null,
           ),
           Text(
             widget.member['name'] != null && widget.member['name'] != ''
                 ? widget.member['name']
                 : 'N/A',
-            style: TextStyle(color: Colors.white, fontSize: 30),
+            style: TextStyle(color: Colors.white, fontSize: 25.sp),
           ),
           SizedBox(height: 4),
           Text(
@@ -57,7 +58,7 @@ class _HeaderDrawerState extends State<HeaderDrawer> {
                 : 'N/A',
             style: TextStyle(
               color: Colors.grey[200],
-              fontSize: 14,
+              fontSize: 12.sp,
             ),
           ),
         ],

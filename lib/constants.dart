@@ -9,9 +9,11 @@ class ApiConstants {
 
   static String sampleUrl = 'https://jsonplaceholder.typicode.com/users';
 
-  static String taskUrl = kProfileMode
-      ? 'https://prayojana-api-staging.netlify.app/.netlify/functions//task-view'
-      : 'https://prayojana.slashdr.com/.netlify/functions//task-view';
+  static String taskUrl(int page) {
+    return kProfileMode
+        ? 'https://prayojana-api-staging.netlify.app/.netlify/functions/task-view?page=$page&limit=6'
+        : 'https://prayojana.slashdr.com/.netlify/functions/task-view?page=$page&limit=6';
+  }
 
   static String interactionUrl =  kProfileMode
       ? 'https://prayojana-api-staging.netlify.app/.netlify/functions/interaction-view'
