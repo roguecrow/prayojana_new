@@ -345,12 +345,12 @@ class _EditMemberProfileState extends State<EditMemberProfile> {
                             salutationController.text = newValue ?? '';
                           });
                         },
-                        items: <String>['Mr.', 'Mrs.', 'Miss', 'Dr.', 'Prof.']
+                        items: <String>['Mr', 'Mrs.', 'Miss', 'Dr.', 'Prof.']
                             .map<DropdownMenuItem<String>>((String value) {
                           return DropdownMenuItem<String>(
                             value: value,
                             child: Text(value,style: GoogleFonts.inter(
-                              textStyle: TextStyle(
+                              textStyle: const TextStyle(
                                 color: Colors.black,
                               ),
                             ),),
@@ -376,47 +376,53 @@ class _EditMemberProfileState extends State<EditMemberProfile> {
                           ),
                         ),
                       )),
-                      buildInfoRow( 'Gender', DropdownButtonFormField2<String>(
-                        value: genderController.text.isNotEmpty ? genderController.text : null,
-                        onChanged: (String? newValue) {
-                          setState(() {
-                            genderController.text = newValue ?? '';
-                          });
-                        },
-                        items: <String>['Male', 'Female', 'Others']
-                            .map<DropdownMenuItem<String>>((String value) {
-                          return DropdownMenuItem<String>(
-                            value: value,
-                            child: Text(
-                              value,
-                              style: GoogleFonts.inter(
-                              textStyle: const TextStyle(
-                                color: Colors.black,
-                              ),
-                            ),),
-
-                          );
-                        }).toList(),
-                        dropdownStyleData: DropdownStyleData(
-                          maxHeight: 200.h,
-                          width: 200.w,
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(14),
-                            color: Colors.white,
+                  buildInfoRow('Gender', DropdownButtonFormField2<String>(
+                    value: genderController.text.isNotEmpty ? genderController.text : null,
+                    onChanged: (String? newValue) {
+                      setState(() {
+                        genderController.text = newValue ?? '';
+                      });
+                    },
+                    items: <String>['Male', 'Female', 'Others']
+                        .map<DropdownMenuItem<String>>((String value) {
+                      return DropdownMenuItem<String>(
+                        value: value,
+                        child: Text(
+                          value,
+                          style: GoogleFonts.inter(
+                            textStyle: const TextStyle(
+                              color: Colors.black,
+                            ),
                           ),
                         ),
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                        ),
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(color: Colors.grey),
-                          ),
-                        ),
-                      ),),
+                      );
+                    }).toList(),
+                    dropdownStyleData: DropdownStyleData(
+                      maxHeight: 200.h,
+                      width: 200.w,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(14),
+                        color: Colors.white,
+                      ),
+                    ),
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                    ),
+                    decoration: InputDecoration(
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.0),
+                        borderSide: const BorderSide(color: Colors.grey),
+                      ),
+                    ),
+                    validator: (String? value) {
+                      if (value != null && !['Male', 'Female', 'Others'].contains(value)) {
+                        return 'Invalid gender';
+                      }
+                      return null;
+                    },
+                  ),),
                       buildInfoRow( 'Date Of Birth',TextFormField(
                         controller: dobController,
                         readOnly: true,

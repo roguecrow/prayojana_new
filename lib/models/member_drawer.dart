@@ -5,10 +5,10 @@ import 'package:prayojana_new/screens/member%20page/member%20details/member%20as
 import 'package:prayojana_new/screens/member%20page/member%20details/member%20documents/member_documents.dart';
 import 'package:prayojana_new/screens/member%20page/member%20details/member%20interest/member_interest.dart';
 import 'package:prayojana_new/screens/member%20page/member%20details/member%20prayojana%20Profile/member_prayojana_profile.dart';
-import '../../../drawer_header.dart';
-import 'screens/member page/member details/member health/member_health.dart';
-import 'screens/member page/member details/member profile/member_profile.dart';
-import 'screens/member page/member details/member report/member_report.dart';
+import 'drawer_header.dart';
+import '../screens/member page/member details/member health/member_health.dart';
+import '../screens/member page/member details/member profile/member_profile.dart';
+import '../screens/member page/member details/member report/member_report.dart';
 
 class MemberDrawer extends StatefulWidget {
   final Map<String, dynamic> member;
@@ -35,10 +35,10 @@ class _MemberDrawerState extends State<MemberDrawer> {
       title = Text('Member Health',style: TextStyle(fontSize: 20.0.sp));
       container = MemberHealth(member: member); // Pass member data to MemberDashboard (if needed)
     }
-    else if (currentPage == DrawerSections.reports) {
-      title = Text('Member Report',style: TextStyle(fontSize: 20.0.sp));
-      container = MemberReport(member: member); // Pass member data to MemberReport (if needed)
-    }
+    // else if (currentPage == DrawerSections.reports) {
+    //   title = Text('Member Report',style: TextStyle(fontSize: 20.0.sp));
+    //   container = MemberReport(member: member); // Pass member data to MemberReport (if needed)
+    // }
     else if (currentPage == DrawerSections.notes) {
       title = Text('Member Summaries',style: TextStyle(fontSize: 20.0.sp));
       container = MemberNotes(member: member);
@@ -101,8 +101,8 @@ class _MemberDrawerState extends State<MemberDrawer> {
               currentPage == DrawerSections.health ? true : false),
           menuItem(3, "Notes", Icons.notes_outlined,
               currentPage == DrawerSections.notes ? true : false),
-          menuItem(4, "Reports", Icons.report_outlined,
-              currentPage == DrawerSections.reports ? true : false),
+          // menuItem(4, "Reports", Icons.report_outlined,
+          //     currentPage == DrawerSections.reports ? true : false),
           menuItem(5, "Assistance", Icons.assistant_outlined,
               currentPage == DrawerSections.assistance ? true : false),
           menuItem(6, "Prayojana Profile", Icons.account_circle_outlined,
@@ -140,9 +140,11 @@ class _MemberDrawerState extends State<MemberDrawer> {
               currentPage = DrawerSections.health;
             } else if (id == 3) {
               currentPage = DrawerSections.notes;
-            } else if (id == 4) {
-              currentPage = DrawerSections.reports;
-            } else if (id == 5) {
+            }
+              // else if (id == 4) {
+            //   currentPage = DrawerSections.reports;
+            // }
+            else if (id == 5) {
               currentPage = DrawerSections.assistance;
             } else if (id == 6) {
               currentPage = DrawerSections.prayojanaprofile;
@@ -194,7 +196,7 @@ enum DrawerSections {
   profile,
   health,
   notes,
-  reports,
+ // reports,
   assistance,
   prayojanaprofile,
   documents,

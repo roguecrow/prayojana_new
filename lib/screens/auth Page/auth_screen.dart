@@ -1,10 +1,13 @@
+import 'dart:convert';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl_phone_field/intl_phone_field.dart';
 import 'package:loading_indicator/loading_indicator.dart';
-import 'package:prayojana_new/bottom_navigaton.dart';
+import 'package:prayojana_new/models/bottom_navigaton.dart';
 import 'package:prayojana_new/firebase_access_token.dart';
+import 'package:prayojana_new/models/drawer_items.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -134,7 +137,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
       await AccessToken().getFirebaseAccessToken(authResult.user);
       final apiService = ApiService();
       var response = await apiService.postBearerToken();
+        print('checkUser response body - ${response.body}');
       if (response.statusCode == 200) {
+        // Store response body and user_id in local storage
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        await prefs.setString('loginUserDetails', response.body);
+        await prefs.setInt('userId', json.decode(response.body)['user_id']);
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => const BottomNavigator(),

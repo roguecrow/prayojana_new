@@ -1,8 +1,17 @@
-import 'package:flutter/material.dart';
+import 'dart:ffi';
 
-import '../../drawer_items.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
+import 'package:prayojana_new/screens/interactions%20page/create_new_interaction_new.dart';
+import 'package:prayojana_new/services/api_service.dart';
+import 'package:table_calendar/table_calendar.dart';
+import '../../models/drawer_items.dart';
+import '../tasks page/create_new_task_new.dart';
 
 class CalendarScreen extends StatefulWidget {
+
   const CalendarScreen({super.key});
 
   @override
@@ -10,39 +19,105 @@ class CalendarScreen extends StatefulWidget {
 }
 
 class _CalendarScreenState extends State<CalendarScreen> {
-  final List<DrawerItem> _drawerItems = [
-    DrawerItem(
-      icon: const Icon(Icons.list, color: Colors.white),
-      title: 'Dashboard',
-      onTap: () {},
-    ),
-    DrawerItem(
-      icon: const Icon(Icons.list, color: Colors.white),
-      title: 'Members',
-      onTap: () {},
-    ),
-    DrawerItem(
-      icon: const Icon(Icons.list, color: Colors.white),
-      title: 'Interactions',
-      onTap: () {},
-    ),
-    DrawerItem(
-      icon: const Icon(Icons.list, color: Colors.white),
-      title: 'Tasks',
-      onTap: () {},
-    ),
-    DrawerItem(
-      icon: const Icon(Icons.list, color: Colors.white),
-      title: 'Reports',
-      onTap: () {},
-    ),
-  ];
+  final _key = GlobalKey<ExpandableFabState>();
+  DateTime today = DateTime.now();
+  Map<String, dynamic>? calendarDetail; // Add this line
+  List<Map<String, dynamic>> tasks = [];
+  List<Map<String, dynamic>> interactions = [];
+
+  bool isOpened = false;
+
+  // AnimationController _animationController;
+  // Animation<color> _buttonColor;
+  // Animation<double> _animationIcon;
+  // Animation<double> _translateButton;
+  // Curve _curve = Curves.easeOut;
+  // double _fabheight = 56.0;
+
+  bool showCalendar = false;
+
+  void toggleCalendar() {
+    setState(() {
+      showCalendar = !showCalendar;
+    });
+  }
+
+  void _onDaySelected(DateTime day, DateTime focusedDay)  {
+    setState(()  {
+      today = day; // Use 'today' if 'day' is null
+       CalenderApi().fetchCalendarDetails(formatDate(today), formatDate(today))
+          .then((details) {
+        setState(() {
+          calendarDetail = details; // Update calendarDetail when data is fetched
+          print('Calendar data: $calendarDetail');
+          fetchTaskAndInteraction();
+        });
+      });
+    });
+  }
+
+
+
+  @override
+  void initState() {
+    super.initState();
+    print('today - $today');
+    fetchCalendarDetails(); // Call the method to fetch details
+  }
+
+  void fetchCalendarDetails() async {
+    final details = await CalenderApi().fetchCalendarDetails(formatDate(today), formatDate(today));
+    setState(() {
+      calendarDetail = details;
+      print('Calendar data: $calendarDetail');
+      fetchTaskAndInteraction();
+    });
+  }
+
+
+  String formatDate(DateTime date) {
+    return DateFormat('yyyy-MM-dd').format(date);
+  }
+
+
+  void fetchTaskAndInteraction() {
+    if (calendarDetail != null && calendarDetail!['status']) {
+      tasks = List<Map<String, dynamic>>.from(calendarDetail!['tasks']);
+      interactions = List<Map<String, dynamic>>.from(calendarDetail!['interactions']);
+      print('Tasks - $tasks');
+      print('Interaction - $interactions');
+    }
+  }
+
+  String formatDueDate(String dueDate) {
+    final originalFormat = DateFormat('yyyy-MM-dd');
+    final newFormat = DateFormat('dd MMM yyyy');
+
+    final dateTime = originalFormat.parse(dueDate);
+    return newFormat.format(dateTime);
+  }
+
+  String viewDate(DateTime date) {
+    DateTime now = DateTime.now();
+    if (date.year == now.year && date.month == now.month && date.day == now.day) {
+      return 'Today, ${DateFormat('dd MMM').format(date)}';
+    } else {
+      DateTime yesterday = now.subtract(const Duration(days: 1));
+      if (date.year == yesterday.year && date.month == yesterday.month && date.day == yesterday.day) {
+        return 'Yesterday, ${DateFormat('dd MMM').format(date)}';
+      } else {
+        return DateFormat('EEEE, dd MMM').format(date);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      extendBody: true, // Add this line
       appBar: AppBar(
         backgroundColor: const Color(0xff006bbf),
-        title: Text('Calendar'),
+        title: const Text('Calendar'),
         actions: [
           IconButton(
             onPressed: () {},
@@ -52,679 +127,304 @@ class _CalendarScreenState extends State<CalendarScreen> {
             ),
           ),
         ],
-        shape: const RoundedRectangleBorder(
+        shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
-            bottomLeft: Radius.circular(5),
-            bottomRight: Radius.circular(5),
+            bottomLeft: Radius.circular(5.r),
+            bottomRight: Radius.circular(5.r),
           ),
         ),
       ),
-      drawer: AppDrawer(drawerItems: _drawerItems),
+      drawer: AppDrawer(),
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            Padding(
+              padding: EdgeInsets.all(18.0.dm),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                   Text(
+                     viewDate(today),
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  InkResponse(
+                    onTap: () {
+                      toggleCalendar();
+                    },
+                    child: Image.asset(
+                      "assets/icons/Calendar.png",
+                      width: 22.w,
+                      height: 22.h,
+                      color: showCalendar ? Colors.blue : null, // Apply a color when highlighted
+                    ),
+                  )
+
+                ],
+              ),
+            ),
+
+            if (showCalendar)
+              Container(
+                margin: EdgeInsets.fromLTRB(20.w, 0.h, 20.w, 20.h),
+                child: TableCalendar(
+                 // rowHeight: 30.h,
+                  headerStyle: const HeaderStyle(formatButtonVisible: false,titleCentered: true),
+                  availableGestures: AvailableGestures.all,
+                  firstDay: DateTime.utc(2021, 1, 1),
+                  lastDay: DateTime.utc(2030, 12, 31),
+                  focusedDay: today,
+                  onDaySelected: _onDaySelected,
+                  selectedDayPredicate: (day) => isSameDay(day, today),
+                  // onDaySelected: _onDaySelected, // Call the function when a day is selected
+                  // ... Customize the calendar as needed ...
+                ),
+              ),
+            Column(
+              children: [
+                Container(
+                  height: 4.h,
+                  width: 320.w,
+                  color: const Color(0xff006bbf) ,
+                ),
+                SingleChildScrollView(
+                  child: Container(
+                    //height: 390.h,
+                    width: 320.w,
+                    color: const Color(0xfff1f9ff),
+                    child: Padding(
+                      padding: EdgeInsets.only(left:16.w, top:18.h),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Padding(
+                            padding: EdgeInsets.only(left: 5.0.w),
+                            child: Text(
+                              "INTERACTION (${interactions.length})", // Use the length of interactions list
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          // List of names with checkboxes
+                          Column(
+                            children: List.generate(interactions.length, (index) {
+                              final interaction = interactions[index];
+                              return Row(
+                                children: [
+                                  Checkbox(
+                                    value: interactions[index]['ist_id'] == 2,
+                                    onChanged: (bool? value) {
+                                      // Handle checkbox change here
+                                    },
+                                    visualDensity: const VisualDensity(
+                                      horizontal: VisualDensity.minimumDensity,
+                                      vertical: VisualDensity.minimumDensity,
+                                    ),
+                                    activeColor: const Color(0xff7fd9b2),
+                                    checkColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(5.0.r),
+                                      side: BorderSide(
+                                        color: const Color(0xffd1d5db),
+                                        width: 1.0.w,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(width: 5.w,),
+                                  Text(
+                                    interaction['title'], // Assuming 'title' is the key for interaction title
+                                    style: TextStyle(fontSize: 16.sp,color: const Color(0xff222222),fontWeight: FontWeight.w600),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                           Divider(height: 30.h,indent: 5.w,color: Colors.black,), // Added Divider
+                          Padding(
+                            padding: EdgeInsets.only(left: 5.0.w),
+                            child: Text(
+                              "TASKS (${tasks.length})", // Use the length of tasks list
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          SizedBox(height: 4.h),
+                          ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: tasks.length,
+                            itemBuilder: (BuildContext context, int index) {
+                              return Column(
+                                children: [
+                                  Row(
+                                    children: [
+                                      Checkbox(
+                                        value: tasks[index]['tst_id'] == 3,
+                                        onChanged: (bool? value) {
+                                          // Handle checkbox change if needed
+                                        },
+                                        visualDensity: const VisualDensity(
+                                          horizontal: VisualDensity.minimumDensity,
+                                          vertical: VisualDensity.minimumDensity,
+                                        ),
+                                        activeColor: const Color(0xff7fd9b2),
+                                        checkColor: Colors.white,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(5.0.r),
+                                          side: BorderSide(
+                                            color: const Color(0xffd1d5db),
+                                            width: 1.0.w,
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: 5.w,),
+                                      Text(
+                                        tasks[index]['task_title'],
+                                        style: TextStyle(
+                                          fontSize: 16.sp,
+                                          color: tasks[index]['tst_color'] == '#D81616'
+                                              ? const Color(0xffD81616) // Use the specified color
+                                              : const Color(0xff222222), // Use black if condition is not met
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  Padding(
+                                    padding: EdgeInsets.only(right: 120.w, top: 4.h), // Adjust the indentation as needed
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          "Due Date: ${formatDueDate(tasks[index]['due_date'])}",
+                                          style: TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w100),
+                                        ),
+                                        SizedBox(height: 3.h,),
+                                        Text(
+                                          "Assigned By: ${tasks[index]['sp_name']}",
+                                          style: TextStyle(fontSize: 12.sp),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: 2.h),
+                                ],
+                              );
+                            },
+                          ),
+                          Divider(height: 30.h,indent: 5.w,color: Colors.black,), // Added Divider
+                          SizedBox(
+                            width: ScreenUtil().screenWidth - 20.w,
+                            child: Padding(
+                              padding:  EdgeInsets.only(left: 12.0.w,bottom: 20.h),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start, // Align children to the start (left)
+                                children: [
+                                   Text(
+                                      "EVENTS",
+                                      style: TextStyle(
+                                        fontSize: 12.sp,
+                                        fontWeight: FontWeight.w500,
+                                      )
+                                  ),
+                                  SizedBox(height: 10.h,),
+                                  Row(
+                                    children: [
+                                      Image.asset(
+                                        "assets/icons/Star.png",
+                                        height: 15.h,
+                                      ),
+                                      SizedBox(width: 12.w),
+                                      Text(
+                                        "Raghu’s Anniversary",
+                                        style: TextStyle(
+                                          color: const Color(0xff018fff),
+                                          fontSize: 14.sp,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      floatingActionButtonLocation: ExpandableFab.location,
+      floatingActionButton: ExpandableFab(
+        duration: const Duration(milliseconds: 60),
+        distance: 50.h,
+        overlayStyle: ExpandableFabOverlayStyle(blur: 2),
+        type: ExpandableFabType.up,
+        openButtonBuilder: RotateFloatingActionButtonBuilder(
+          child: const Icon(Icons.add),
+          fabSize: ExpandableFabSize.regular,
+          foregroundColor: Colors.white,
+          backgroundColor: Colors.blue,
+          shape: const OvalBorder(),
+        ),
+        closeButtonBuilder: FloatingActionButtonBuilder(
+          size: 56,
+          builder: (BuildContext context, void Function()? onPressed,
+              Animation<double> progress) {
+            return IconButton(
+              onPressed: onPressed,
+              icon: const Icon(
+                Icons.close,
+                size: 40,
+              ),
+            );
+          },
+        ),
+        children: [
+          FloatingActionButton.extended(
+            onPressed: () {
+              _navigateToCreateInteractionScreen();
+            },
+            label: const Text('INTERACTION'),
+            foregroundColor:const Color(0xff018fff) ,
+            backgroundColor: const Color(0xffffffff),
+          ),
+          FloatingActionButton.extended(
+            onPressed: () {
+              _navigateToCreateTaskScreen();
+            },
+            label: const Text('TASK'),
+            foregroundColor:const Color(0xff018fff) ,
+            backgroundColor: const Color(0xffffffff),
+          ),
+        ],
+      ),
     );
   }
+  void _navigateToCreateTaskScreen() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CreateTaskNew()),
+    );
+  }
+  void _navigateToCreateInteractionScreen() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => const CreateInteractionNew()),
+    );
+  }
+
 }
-
-// import 'package:flutter/material.dart';
-// import 'package:intl/intl.dart';
-// import 'package:http/http.dart' as http;
-// import 'dart:convert';
-//
-// import '../../constants.dart';
-// import '../../graphql_queries.dart';
-// import '../../services/api_service.dart';
-//
-// class TaskDetailsScreen extends StatefulWidget {
-//   final dynamic task;
-//
-//   const TaskDetailsScreen({Key? key, required this.task}) : super(key: key);
-//
-//   @override
-//   _TaskDetailsScreenState createState() => _TaskDetailsScreenState();
-// }
-//
-// class _TaskDetailsScreenState extends State<TaskDetailsScreen> {
-//   final TextEditingController _dueDateController = TextEditingController();
-//   List<String> memberNames = [];
-//   List<Map<String, dynamic>> taskStatusTypes = []; // Store task status types here
-//   List<dynamic> serviceProviderTypes = []; // Store service provider types here
-//   String? selectedServiceProviderType;
-//   final TextEditingController _notesController = TextEditingController();
-//   int? selectedTaskStatusTypeId; // Store the selected task status type ID
-//   int? serviceProviderId; // Store the selected service provider type ID
-//   int? selectedServiceProviderTypeIndex;
-//   int? serviceProviderTypeId;
-//   final _dropdownFocusNode = FocusNode();
-//
-//
-//
-//   // Function to format due date
-//   String formatDueDate(String dueDate) {
-//     final originalFormat = DateFormat('yyyy-MM-dd');
-//     final newFormat = DateFormat('dd MMM yyyy');
-//
-//     final dateTime = originalFormat.parse(dueDate);
-//     return newFormat.format(dateTime);
-//   }
-//
-//   String formatTime(String time) {
-//     final originalFormat = DateFormat('HH:mm:ss.SSSSSS');
-//     final newFormat = DateFormat('hh:mm a');
-//
-//     final dateTime = originalFormat.parse(time);
-//     return newFormat.format(dateTime);
-//   }
-//
-//   Future<void> _updateTask() async {
-//     String accessToken = await getFirebaseAccessToken();
-//     if (selectedTaskStatusTypeId == null) {
-//       // Display an error message
-//       // ignore: use_build_context_synchronously
-//       showDialog(
-//         context: context,
-//         builder: (BuildContext context) {
-//           return AlertDialog(
-//             title: Text('Error'),
-//             content: Text('Please select a task status type before updating.'),
-//             actions: [
-//               TextButton(
-//                 onPressed: () {
-//                   Navigator.pop(context);
-//                 },
-//                 child: Text('OK'),
-//               ),
-//             ],
-//           );
-//         },
-//       );
-//       return;
-//     }
-//
-//     final http.Response response = await http.post(
-//       Uri.parse(ApiConstants.graphqlUrl),
-//       headers: {
-//         'Content-Type': ApiConstants.contentType,
-//         'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
-//         'x-hasura-admin-secret': ApiConstants.adminSecret,
-//         'Authorization': 'Bearer $accessToken',
-//       },
-//       body: jsonEncode({
-//         'query': updateTaskQuery,
-//         'variables': {
-//           'taskId': widget.task['id'],
-//           'taskTitle': widget.task['task_title'],
-//           'dueDate': _dueDateController.text,
-//           'taskStatusTypeId': selectedTaskStatusTypeId, // Use selected task status type
-//           'serviceProviderId': serviceProviderId, // Use selected service provider type
-//           'taskNotes': _notesController.text,
-//         },
-//       }),
-//     );
-//     print(serviceProviderId);
-//     print(selectedTaskStatusTypeId);
-//
-//     if (response.statusCode == 200) {
-//       print('Response Body: ${response.body}');
-//       Navigator.pop(context, true);
-//     } else {
-//       print('API Error: ${response.reasonPhrase}');
-//     }
-//   }
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     _dueDateController.text = widget.task['due_date'];
-//     _notesController.text = widget.task['task_notes'] ?? '';
-//     _fetchMemberNames();
-//     _fetchTaskStatusTypes(); // Fetch task status types when the screen initializes
-//     _fetchServiceProviderTypes();
-//   }
-//
-//
-//   void _fetchServiceProviderTypes() async {
-//     try {
-//       final http.Response response = await http.post(
-//         Uri.parse(ApiConstants.graphqlUrl),
-//         headers: {
-//           'Content-Type': ApiConstants.contentType,
-//           'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
-//           'x-hasura-admin-secret': ApiConstants.adminSecret,
-//         },
-//         body: jsonEncode({
-//           'query': getServiceProviderTypesQuery,
-//         }),
-//       );
-//
-//       if (response.statusCode == 200) {
-//         final data = jsonDecode(response.body);
-//         final providers = data['data']['service_providers'] as List<dynamic>;
-//
-//         setState(() {
-//           serviceProviderTypes = providers;
-//           // Assuming you want to store the first service provider type ID
-//           serviceProviderTypeId = providers.isNotEmpty
-//               ? providers[0]['service_provider_type_id'] as int
-//               : null;
-//         });
-//       } else {
-//         print('API Error: ${response.reasonPhrase}');
-//       }
-//     } catch (error) {
-//       print('Error fetching service provider types: $error');
-//     }
-//   }
-//   // Fetch and populate member names from the task
-//   void _fetchMemberNames() {
-//     final taskMembers = widget.task['task_members'] as List<dynamic>?;
-//     if (taskMembers != null) {
-//       setState(() {
-//         memberNames = taskMembers
-//             .map((member) => member['member']?['name'] as String?)
-//             .where((name) => name != null)
-//             .map((name) => name!)
-//             .toList();
-//       });
-//     }
-//     print(memberNames);
-//   }
-//
-//
-//   // Fetch and populate task status types
-//   void _fetchTaskStatusTypes() async {
-//     try {
-//       String accessToken = await getFirebaseAccessToken();
-//       final http.Response response = await http.post(
-//         Uri.parse(ApiConstants.graphqlUrl),
-//         headers: {
-//           'Content-Type': ApiConstants.contentType,
-//           'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
-//           'x-hasura-admin-secret': ApiConstants.adminSecret,
-//           'Authorization': 'Bearer $accessToken',
-//         },
-//         body: jsonEncode({'query': getTaskStatusTypesQuery}),
-//       );
-//
-//       if (response.statusCode == 200) {
-//         final data = json.decode(response.body);
-//         setState(() {
-//           taskStatusTypes = List<Map<String, dynamic>>.from(data['data']['task_status_types']);
-//         });
-//       } else {
-//         print('API Error: ${response.reasonPhrase}');
-//       }
-//     } catch (error) {
-//       print('Error fetching task status types: $error');
-//     }
-//   }
-//
-//   String? selectedTaskStatusType; // Store the selected task status type
-//
-//   @override
-//   Widget build(BuildContext context) {
-//     List<Map<String, dynamic>> distinctServiceProviderTypes = [];
-//     for (var provider in serviceProviderTypes) {
-//       final serviceProviderId = provider['id'] as int;
-//       final serviceProviderTypeName = provider['service_provider_type']['name'] as String;
-//       if (!distinctServiceProviderTypes.any((item) => item['service_provider_type']['name'] == serviceProviderTypeName)) {
-//         distinctServiceProviderTypes.add(provider);
-//       }
-//     }
-//     return Scaffold(
-//       extendBodyBehindAppBar: true,
-//       body: SingleChildScrollView(
-//         child: Padding(
-//           padding: const EdgeInsets.only(bottom: 16.0), // Add padding at the bottom for scrolling space
-//           child: Column(
-//             children: [
-//               Padding(
-//                 padding: const EdgeInsets.only(top: 25.0),
-//                 child: Row(
-//                   children: [
-//                     IconButton(
-//                       onPressed: () {
-//                         Navigator.pop(context);
-//                       },
-//                       icon: const Padding(
-//                         padding: EdgeInsets.only(left: 16.12, top: 16.0),
-//                         child: Icon(
-//                           Icons.close,
-//                           size: 32,
-//                         ),
-//                       ),
-//                     ),
-//                     const Spacer(),
-//                     Padding(
-//                       padding: const EdgeInsets.only(right: 25.0, top: 25.0),
-//                       child: ElevatedButton(
-//                         onPressed: _updateTask,
-//                         style: ElevatedButton.styleFrom(
-//                           padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
-//                         ),
-//                         child: const Text(
-//                           'Update',
-//                           style: TextStyle(
-//                             fontSize: 18,
-//                           ),
-//                         ),
-//                       ),
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//               Padding(
-//                 padding: const EdgeInsets.only(left: 16.0 , right: 16.0),
-//                 child: Column(
-//                   children: [
-//                     Container(
-//                       alignment: Alignment.centerLeft,
-//                       padding: const EdgeInsets.only(top: 50.0, bottom: 37.0, left: 20.0),
-//                       child: Text(
-//                         widget.task['task_title'],
-//                         style: TextStyle(
-//                           fontSize: 24,
-//                           fontWeight: FontWeight.bold,
-//
-//                           color: widget.task['task_status_type_id'] == 1
-//                               ? Color(int.parse('0xFF${widget.task['task_status_type']['color'].substring(1)}'))
-//                               : null,
-//                         ),
-//                       ),
-//                     ),
-//                     Row(
-//                       crossAxisAlignment: CrossAxisAlignment.start,
-//                       children: [
-//                         Container(
-//                           padding: const EdgeInsets.only(left: 20.0, right: 41.0),
-//                           decoration: BoxDecoration(
-//                             borderRadius: BorderRadius.circular(8.0),
-//                           ),
-//                           child: const Text(
-//                             'Members',
-//                             style: TextStyle(
-//                               fontSize: 16,
-//                               fontWeight: FontWeight.bold,
-//                             ),
-//                           ),
-//                         ),
-//                         const SizedBox(width: 10),
-//                         Column(
-//                           crossAxisAlignment: CrossAxisAlignment.start,
-//                           children: [
-//                             for (String memberName in memberNames)
-//                               Align(
-//                                 alignment: Alignment.centerLeft,
-//                                 child: Text(
-//                                   memberName,
-//                                   style: const TextStyle(
-//                                     fontSize: 16,
-//                                     color: Color(0xff006bbf),
-//                                   ),
-//                                 ),
-//                               ),
-//                           ],
-//                         ),
-//                       ],
-//                     ),
-//                     const SizedBox(height: 18),
-//                     Row(
-//                       children: [
-//                         Container(
-//                           padding: const EdgeInsets.only(left: 20.0, right: 41.0),
-//                           decoration: BoxDecoration(
-//                             borderRadius: BorderRadius.circular(8.0),
-//                           ),
-//                           child: const Text(
-//                             'Due Date',
-//                             style: TextStyle(
-//                               fontSize: 16,
-//                               fontWeight: FontWeight.bold,
-//                             ),
-//                           ),
-//                         ),
-//                         const SizedBox(width: 8.0),
-//                         Expanded(
-//                           child: TextFormField(
-//                             initialValue: formatDueDate(widget.task['due_date']),
-//                             readOnly: true,
-//                             style: const TextStyle(
-//                               fontSize: 16,
-//                             ),
-//                             decoration: InputDecoration(
-//                               filled: true,
-//                               fillColor: Colors.grey[300],
-//                               border: OutlineInputBorder(
-//                                 borderRadius: BorderRadius.circular(8.0),
-//                                 borderSide: BorderSide.none,
-//                               ),
-//                             ),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                     const SizedBox(height: 18),
-//                     Row(
-//                       children: [
-//                         Container(
-//                           padding: const EdgeInsets.only(left: 20.0),
-//                           decoration: BoxDecoration(
-//                             borderRadius: BorderRadius.circular(8.0),
-//                           ),
-//                           child: const Text(
-//                             'Time',
-//                             style: TextStyle(
-//                               fontSize: 16,
-//                               fontWeight: FontWeight.bold,
-//                             ),
-//                           ),
-//                         ),
-//                         Expanded(
-//                           child: Padding(
-//                             padding: const EdgeInsets.only(left: 74.0),
-//                             child: TextFormField(
-//                               initialValue: formatTime(widget.task['due_time']),
-//                               readOnly: true,
-//                               style: const TextStyle(
-//                                 fontSize: 16,
-//                               ),
-//                               decoration: InputDecoration(
-//                                 filled: true,
-//                                 fillColor: Colors.grey[300],
-//                                 border: OutlineInputBorder(
-//                                   borderRadius: BorderRadius.circular(8.0),
-//                                   borderSide: BorderSide.none,
-//                                 ),
-//                               ),
-//                             ),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                     const SizedBox(height: 18),
-//                     Row(
-//                       children: [
-//                         Container(
-//                           padding: const EdgeInsets.only(left: 20.0),
-//                           decoration: BoxDecoration(
-//                             borderRadius: BorderRadius.circular(8.0),
-//                           ),
-//                           child: const Text(
-//                             'Assigned by',
-//                             style: TextStyle(
-//                               fontSize: 16,
-//                               fontWeight: FontWeight.bold,
-//                             ),
-//                           ),
-//                         ),
-//                         Expanded(
-//                           child: Padding(
-//                             padding: const EdgeInsets.only(left: 28.0),
-//                             child: TextFormField(
-//                               initialValue: widget.task['user']['name'],
-//                               readOnly: true,
-//                               style: const TextStyle(
-//                                 fontSize: 16,
-//                               ),
-//                               decoration: InputDecoration(
-//                                 filled: true,
-//                                 fillColor: Colors.grey[300],
-//                                 border: OutlineInputBorder(
-//                                   borderRadius: BorderRadius.circular(8.0),
-//                                   borderSide: BorderSide.none,
-//                                 ),
-//                               ),
-//                             ),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                     const SizedBox(height: 18),
-//                     Row(
-//                       children: [
-//                         Container(
-//                           padding: const EdgeInsets.only(left: 20.0),
-//                           decoration: BoxDecoration(
-//                             borderRadius: BorderRadius.circular(8.0),
-//                           ),
-//                           child: const Text(
-//                             'Status',
-//                             style: TextStyle(
-//                               fontSize: 16,
-//                               fontWeight: FontWeight.bold,
-//                             ),
-//                           ),
-//                         ),
-//                         Expanded(
-//                           child: Padding(
-//                             padding: const EdgeInsets.only(left: 70.0),
-//                             child: DropdownButtonFormField<int>(
-//                               focusNode: _dropdownFocusNode,
-//                               value: selectedTaskStatusTypeId ?? widget.task['task_status_type_id'],
-//                               items: taskStatusTypes.map((statusType) {
-//                                 final colorString = statusType['color'] as String;
-//                                 final color = Color(int.parse('0xFF${colorString.substring(1)}'));
-//                                 final textColor = statusType['name'] == 'Cancled' ? Colors.black : color;
-//                                 //print(widget.task['service_provider']['service_provider_type']['id']);
-//                                 // print(serviceProviderTypeId);
-//                                 //print(statusType['name']);
-//                                 return DropdownMenuItem<int>(
-//                                   value: statusType['id'],
-//                                   child: Text(
-//                                     statusType['name'],
-//                                     style: TextStyle(
-//                                       color: textColor,
-//                                     ),
-//                                   ),
-//                                 );
-//                               }).toList(),
-//                               onChanged: (newValue) {
-//                                 setState(() {
-//                                   _dropdownFocusNode.unfocus();
-//                                   selectedTaskStatusTypeId = newValue;
-//                                   selectedTaskStatusType = taskStatusTypes.firstWhere((statusType) => statusType['id'] == newValue)['name'];
-//                                   print(newValue);
-//                                   print(selectedTaskStatusTypeId);
-//                                   print(selectedTaskStatusType);
-//                                 });
-//                               },
-//                               decoration: InputDecoration(
-//                                 filled: true,
-//                                 border: OutlineInputBorder(
-//                                   borderRadius: BorderRadius.circular(8.0),
-//                                   borderSide: const BorderSide(color: Colors.grey),
-//                                 ),
-//                               ),
-//                             ),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                     const SizedBox(height: 18),
-//                     Row(
-//                       children: [
-//                         Container(
-//                           padding: const EdgeInsets.only(left: 20.0),
-//                           decoration: BoxDecoration(
-//                             borderRadius: BorderRadius.circular(8.0),
-//                           ),
-//                           child:const Column(
-//                             crossAxisAlignment: CrossAxisAlignment.start,
-//                             children: [
-//                               Text(
-//                                 'Service',
-//                                 style: TextStyle(
-//                                   fontSize: 16,
-//                                   fontWeight: FontWeight.bold,
-//                                 ),
-//                               ),
-//                               Text(
-//                                 'Provider',
-//                                 style: TextStyle(
-//                                   fontSize: 16,
-//                                   fontWeight: FontWeight.bold,
-//                                 ),
-//                               ),
-//                             ],
-//                           ),
-//                         ),
-//
-//                         Expanded(
-//                           child: Padding(
-//                             padding: const EdgeInsets.only(left: 44.5),
-//                             child: DropdownButtonFormField<int>(
-//                               value: null,
-//                               items: distinctServiceProviderTypes.map((provider) {
-//                                 final serviceProviderId = provider['id'] as int;
-//                                 final serviceProviderTypeName = provider['service_provider_type']['name'] as String;
-//                                 //print(widget.task['service_provider_type_id'],);
-//                                 //print(serviceProviderTypeName);
-//                                 //print(provider['service_provider_type_id']);
-//                                 return DropdownMenuItem<int>(
-//                                   value: serviceProviderId,
-//                                   child: Text(serviceProviderTypeName),
-//                                 );
-//                               }).toList(),
-//                               onChanged: (newValue) {
-//                                 setState(() {
-//                                   serviceProviderId = newValue;
-//                                 });
-//                               },
-//                               decoration: InputDecoration(
-//                                 filled: true,
-//                                 border: OutlineInputBorder(
-//                                   borderRadius: BorderRadius.circular(8.0),
-//                                   borderSide: const BorderSide(color: Colors.grey),
-//                                 ),
-//                               ),
-//                             ),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                     const Divider(
-//                       height: 50,
-//                       thickness: 1,
-//                       indent: 10,
-//                       endIndent: 10,
-//                       color: Color(0xff969696),
-//                     ),
-//                     Row(
-//                       children: [
-//                         Container(
-//                           padding: const EdgeInsets.only(left: 20.0),
-//                           decoration: BoxDecoration(
-//                             borderRadius: BorderRadius.circular(8.0),
-//                           ),
-//                           child: const Column(
-//                             crossAxisAlignment: CrossAxisAlignment.start,
-//                             children: [
-//                               Text(
-//                                 'Add',
-//                                 style: TextStyle(
-//                                   fontSize: 16,
-//                                   fontWeight: FontWeight.bold,
-//                                 ),
-//                               ),
-//                               Text(
-//                                 'Attachment',
-//                                 style: TextStyle(
-//                                   fontSize: 16,
-//                                   fontWeight: FontWeight.bold,
-//                                 ),
-//                               ),
-//                             ],
-//                           ),
-//                         ),
-//                         Expanded(
-//                           child: Padding(
-//                             padding: const EdgeInsets.only(left: 20.5),
-//                             child: Stack(
-//                               alignment: Alignment.centerRight,
-//                               children: [
-//                                 TextFormField(
-//                                   readOnly: true,
-//                                   style: const TextStyle(
-//                                     fontSize: 16,
-//                                   ),
-//                                   decoration: InputDecoration(
-//                                     filled: true,
-//                                     hintText: 'Photos,documents etc..',
-//                                     fillColor: Colors.grey[300],
-//                                     border: OutlineInputBorder(
-//                                       borderRadius: BorderRadius.circular(8.0),
-//                                       borderSide: BorderSide.none,
-//                                     ),
-//                                   ),
-//                                 ),
-//                                 IconButton(
-//                                   onPressed: () {
-//                                     // Handle the add icon button press
-//                                   },
-//                                   icon: const Icon(
-//                                     Icons.add_circle_outline,
-//                                     color: Colors.grey, // You can adjust the color of the add icon here
-//                                   ),
-//                                 ),
-//                               ],
-//                             ),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                     const Divider(
-//                       height: 50,
-//                       thickness: 1,
-//                       indent: 10,
-//                       endIndent: 10,
-//                       color: Color(0xff969696),
-//                     ),
-//                     Row(
-//                       children: [
-//                         Container(
-//                           padding: const EdgeInsets.only(left: 20.0),
-//                           decoration: BoxDecoration(
-//                             borderRadius: BorderRadius.circular(8.0),
-//                           ),
-//                           child: const Text(
-//                             'Add Notes',
-//                             style: TextStyle(
-//                               fontSize: 16,
-//                               fontWeight: FontWeight.bold,
-//                             ),
-//                           ),
-//                         ),
-//                         Expanded(
-//                           child: Padding(
-//                             padding: const EdgeInsets.only(left: 28.0),
-//                             child: TextFormField(
-//                               controller: _notesController, // Attach the TextEditingController
-//                               style: const TextStyle(
-//                                 fontSize: 16,
-//                               ),
-//                               maxLines: null, // Allow multiple lines of input
-//                               decoration: InputDecoration(
-//                                 filled: true,
-//                                 fillColor: Colors.white,
-//                                 border: OutlineInputBorder(
-//                                   borderRadius: BorderRadius.circular(8.0),
-//                                   borderSide: const BorderSide(color: Colors.grey),
-//                                 ),
-//                               ),
-//                             ),
-//                           ),
-//                         ),
-//                       ],
-//                     ),
-//                   ],
-//                 ),
-//               ),
-//             ],
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
-//
-
 
 

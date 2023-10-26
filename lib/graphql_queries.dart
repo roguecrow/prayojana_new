@@ -1006,3 +1006,101 @@ mutation MyMutation($id: Int!, $member_id: Int!, $doctor_address_id: Int!, $doct
 
 
 
+String taskDetailsQuery(int taskId) {
+  return '''
+query MyQuery {
+  tasks(order_by: {id: desc}, where: {id: {_eq: $taskId}}) {
+      carebuddy_id
+      due_date
+      due_time
+      created_by
+      id
+      task_notes
+      task_title
+      task_status_type_id
+      interaction_id
+      service_provider_id
+      service_provider {
+        name
+        service_provider_type {
+          name
+        }
+      }
+      task_attachements {
+        file_type
+        url
+      },
+      user {
+        name
+      }
+      task_status_type {
+        name
+        color
+      }
+      member_summaries {
+        id
+        member_id
+        notes
+        task_id
+      }
+    task_members{
+      member_id
+      member{
+        name
+      }
+    }
+    
+  }
+}
+
+''';
+}
+
+
+String interactionDetailsQuery(int interactionId) {
+  return '''
+ query MyQuery {
+    interaction_members(
+        where: {
+          interaction: { id: { _eq: $interactionId } }
+        }
+    ) {
+      interaction {
+        carebuddy_id
+        id
+        interaction_date
+        carebuddy_id
+        interaction_status_type_id
+        interaction_type_id
+        interaction_time
+        is_active
+        notes
+        title
+        member_summaries {
+          interaction_id
+          member_id
+          notes
+        }
+        interaction_attachements {
+          id
+          url
+        }
+        interaction_status_type {
+          color
+          name
+        }
+        interaction_type {
+          id
+          name
+        }
+      }
+      member_id
+      member {
+        name
+      }
+    }
+  }
+''';
+}
+
+

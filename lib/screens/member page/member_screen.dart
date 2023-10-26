@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:prayojana_new/drawer_items.dart';
-import '../../member_drawer.dart';
+import '../../models/drawer_items.dart';
+import '../../models/member_drawer.dart';
 import '../../services/api_service.dart';
 import 'member details/member profile/member_profile.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -75,33 +75,7 @@ class _MemberScreenState extends State<MemberScreen> {
     });
   }
 
-  final List<DrawerItem> _drawerItems = [
-    DrawerItem(
-      icon: const Icon(Icons.list, color: Colors.white),
-      title: 'Dashboard',
-      onTap: () {},
-    ),
-    DrawerItem(
-      icon: const Icon(Icons.list, color: Colors.white),
-      title: 'Members',
-      onTap: () {},
-    ),
-    DrawerItem(
-      icon: const Icon(Icons.list, color: Colors.white),
-      title: 'Interactions',
-      onTap: () {},
-    ),
-    DrawerItem(
-      icon: const Icon(Icons.list, color: Colors.white),
-      title: 'Tasks',
-      onTap: () {},
-    ),
-    DrawerItem(
-      icon: const Icon(Icons.list, color: Colors.white),
-      title: 'Reports',
-      onTap: () {},
-    ),
-  ];
+
 
   @override
   Widget build(BuildContext context) {
@@ -126,62 +100,64 @@ class _MemberScreenState extends State<MemberScreen> {
           ),
         ),
       ),
-      drawer: AppDrawer(drawerItems: _drawerItems),
+      drawer: AppDrawer(),
       body: Column(
         children: [
           Padding(
-            padding: EdgeInsets.only(top: 10.0.h,bottom: 10.h),
-            child: SizedBox(
-              width: ScreenUtil().screenWidth, // Set the width to the screen width
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  OutlinedButton(
-                    onPressed: () {
-                      // Handle button press
-                    },
+            padding: EdgeInsets.symmetric(vertical: 12.0.h),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Padding(
+                  padding: EdgeInsets.only(left: 20.0.w),
+                  child: Row(
+                    children: [
+                      OutlinedButton(
+                        onPressed: (){},
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(32.0.r),
+                          ),
+                          //backgroundColor: getButtonColor(isTodayButtonPressed),
+                        ),
+                        child: const Text(
+                          'LOCATION',
+                          //style: TextStyle(color: getButtonTextColor(isTodayButtonPressed)),
+                        ),
+                      ),
+                      SizedBox(width: 9.w),
+                      OutlinedButton(
+                        onPressed: (){},
+                        style: OutlinedButton.styleFrom(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(32.0),
+                          ),
+                          //backgroundColor: getButtonColor(isWeekButtonPressed),
+                        ),
+                        child: const Text(
+                          'STATUS',
+                         // style: TextStyle(color: getButtonTextColor(isWeekButtonPressed)),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: EdgeInsets.only(right: 20.0.w),
+                  child: OutlinedButton(
+                    onPressed: (){},
                     style: OutlinedButton.styleFrom(
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32.0.w),
+                        borderRadius: BorderRadius.circular(32.0.r),
                       ),
+                     // backgroundColor: getButtonColor(isFilterButtonPressed),
                     ),
-                    child: const Text('LOCALITY'),
-                  ),
-                  OutlinedButton(
-                    onPressed: () {
-                      // Handle button press
-                    },
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32.0.w),
-                      ),
-                    ),
-                    child: const Text('STATUS'),
-                  ),
-                  OutlinedButton(
-                    onPressed: () {
-                      // Handle button press
-                    },
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32.0.w),
-                      ),
-                    ),
-                    child: const Text('PLAN'),
-                  ),
-                  OutlinedButton(
-                    onPressed: () {
-                      // Handle button press
-                    },
-                    style: OutlinedButton.styleFrom(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(32.0.w),
-                      ),
-                    ),
-                    child: const Text('CAREBUDDY'),
-                  ),
-                ],
-              ),
+                    child: const Text(
+                      'PLAN',
+                     // style: TextStyle(color: getButtonTextColor(isFilterButtonPressed)),
+                    ),),
+                ),
+              ],
             ),
           ),
           const Divider(
@@ -194,19 +170,11 @@ class _MemberScreenState extends State<MemberScreen> {
               itemCount: _membersData!.length,
               itemBuilder: (context, index) {
                 final member = _membersData![index];
-                final familyName = member['client_members'] != null && member['client_members'].isNotEmpty
-                    ? member['client_members'][0]['client'] != null
-                    ? member['client_members'][0]['client']['family_name'] ?? 'N/A'
-                    : 'N/A'
-                    : 'N/A';
-
+                final familyName = member['family_name'] ?? 'N/A';
                 final memberName = member['name'] ?? 'Name not available';
+                final planName = member['plan_name'] ?? 'N/A';
+                final planColor = member['plan_color'] ?? '';
 
-                final plans = member['client_members'] != null && member['client_members'].isNotEmpty
-                    ? member['client_members'][0]['client'] != null
-                    ? member['client_members'][0]['client']['client_plans']
-                    : []
-                    : [];
 
                 return Column(
                   children: [
@@ -223,33 +191,23 @@ class _MemberScreenState extends State<MemberScreen> {
                                 fontWeight: FontWeight.w500,
                               ),
                             ),
-                            Wrap(
-                              spacing: 8.0,
-                              children: plans.map<Widget>((plan) {
-                                final planName =
-                                plan['plan'] != null ? plan['plan']['name'] ?? 'Unknown Plan' : 'Unknown Plan';
-                                final planColor =
-                                plan['plan'] != null ? plan['plan']['color'] ?? '#000000' : '#000000';
-
-                                return Padding(
-                                  padding: EdgeInsets.only(left: 8.0.w),
-                                  child: Container(
-                                    padding:
-                                     EdgeInsets.symmetric(horizontal: 12.0.w, vertical: 4.0.h),
-                                    decoration: BoxDecoration(
-                                      color: Color(int.parse(planColor.replaceAll("#", "0xFF"))),
-                                      borderRadius: BorderRadius.circular(15.0), // Adjust the radius as needed
-                                    ),
-                                    child: Text(
-                                      planName,
-                                      style: TextStyle(
-                                        fontSize: 10.sp,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
+                            Padding(
+                              padding: EdgeInsets.only(left: 12.0.w),
+                              child: Container(
+                                padding:
+                                EdgeInsets.symmetric(horizontal: 12.0.w, vertical: 4.0.h),
+                                decoration: BoxDecoration(
+                                  color: Color(int.parse(planColor.replaceAll("#", "0xFF"))),
+                                  borderRadius: BorderRadius.circular(15.0), // Adjust the radius as needed
+                                ),
+                                child: Text(
+                                  planName,
+                                  style: TextStyle(
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w600,
                                   ),
-                                );
-                              }).toList(),
+                                ),
+                              ),
                             ),
                           ],
                         ),

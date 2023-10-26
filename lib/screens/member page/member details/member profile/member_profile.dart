@@ -6,6 +6,8 @@ import 'package:loading_indicator/loading_indicator.dart';
 import 'package:prayojana_new/screens/member%20page/member%20details/member%20profile/member_profile_edit.dart';
 import 'package:prayojana_new/services/api_service.dart';
 
+import '../../../../other_app_navigator.dart';
+
 
 class MemberProfile extends StatefulWidget {
   const MemberProfile({Key? key, required this.member}) : super(key: key);
@@ -39,6 +41,7 @@ class _MemberProfileState extends State<MemberProfile> {
   }
 
 
+
   Widget _buildInfoRow(String label, String? value, {double fontSize = 14.0, FontWeight? fontWeight}) {
     return Padding(
       padding: EdgeInsets.all(10.0.h),
@@ -49,9 +52,52 @@ class _MemberProfileState extends State<MemberProfile> {
             '$label:',
             style: TextStyle(fontSize: fontSize, fontWeight: fontWeight),
           ),
-          Text(
-            value ?? 'N/A',
-            style: TextStyle(fontSize: fontSize ,fontWeight: fontWeight),
+          value != null && label.toLowerCase() == 'location'
+              ? GestureDetector(
+            onTap: () {
+              // Handle location click action here
+              MapUtils.openMap(value);
+              print('Location clicked: $value');
+            },
+            child: Container(
+              width: 150, // Set a maximum width for the value text
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: fontWeight,
+                  color: Colors.blue, // Style it as a link
+                  decoration: TextDecoration.underline, // Underline it
+                ),
+              ),
+            ),
+          )
+              :label.toLowerCase() == 'mobile' ||
+              label.toLowerCase() == 'emergency contact' ||
+              label.toLowerCase() == 'alternative mobile'
+              ? GestureDetector(
+            onTap: () {
+              makeCall.makePhoneCall('tel:$value');
+            },
+            child: Container(
+              width: 150, // Set a maximum width for the value text
+              child: Text(
+                value!,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: fontWeight,
+                  color: Colors.blue, // Style it as a link
+                  decoration: TextDecoration.underline, // Underline it
+                ),
+              ),
+            ),
+          )
+              : Container(
+            width: 150, // Set a maximum width for the value text
+            child: Text(
+              value ?? 'N/A',
+              style: TextStyle(fontSize: fontSize, fontWeight: fontWeight),
+            ),
           ),
         ],
       ),

@@ -1,13 +1,28 @@
 import 'dart:convert';
 import 'dart:developer';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 import 'package:prayojana_new/graphql_queries.dart';
 import '../constants.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../firebase_access_token.dart';
+
 
 Future<String> getFirebaseAccessToken() async {
+
   SharedPreferences prefs = await SharedPreferences.getInstance();
+
+  DateTime expiryTime = DateTime.fromMillisecondsSinceEpoch(prefs.getInt('accessTokenExpiry') ?? 0);
+  if (expiryTime.isBefore(DateTime.now())) {
+    // Access token is expired, refresh it
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      await AccessToken().refreshAccessToken(user);
+      expiryTime = DateTime.fromMillisecondsSinceEpoch(prefs.getInt('accessTokenExpiry') ?? 0);
+      print('new refresh token storeed');
+    }
+  }
   return prefs.getString('firebaseAccessToken') ?? '';
 }
 
@@ -103,7 +118,14 @@ class MemberApi {
     return response;
   }
 
-  Future<List<dynamic>?> fetchTaskMembersData(int page) async {
+  Future<List<dynamic>?> fetchTaskMembersData( from, to, carebuddy, pageNo, status, members,) async {
+    print('from - $from');
+    print('to - $to');
+    print('carebuddy - $carebuddy');
+    print('pageNo - $pageNo');
+    print('status - $status');
+    print('members - $members');
+
     String accessToken = await getFirebaseAccessToken();
     var headers = {
       'Content-Type': ApiConstants.contentType,
@@ -114,18 +136,42 @@ class MemberApi {
 
     var request = http.Request(
       'POST',
-      Uri.parse(ApiConstants.taskUrl(page)),
+      Uri.parse(ApiConstants.taskUrl),
     );
 
+    var requestBody = {};
+
+    if (from != null && to != null) {
+      requestBody['from'] = from;
+      requestBody['to'] = to;
+    }
+
+    if (carebuddy != null) {
+      requestBody['carebuddy'] = carebuddy;
+    }
+
+    if (pageNo != null) {
+      requestBody['page_no'] = pageNo;
+    }
+
+    if (status != null) {
+      requestBody['status'] = status;
+    }
+
+    if (members != null) {
+      requestBody['members'] = members;
+    }
+
     request.headers.addAll(headers);
+    request.body = jsonEncode(requestBody);
 
     http.StreamedResponse response = await request.send();
 
     if (response.statusCode == 200) {
       String responseString = await response.stream.bytesToString();
       Map<String, dynamic> responseData = json.decode(responseString);
-      List<dynamic>? taskMembers = responseData['taskMembersData'];
-      print('Task Members Data: $taskMembers');
+      List<dynamic>? taskMembers = responseData['data'];
+      //print('Task Members Data: $taskMembers');
       return taskMembers;
     } else {
       print('API Error: ${response.reasonPhrase}');
@@ -386,9 +432,67 @@ class MemberApi {
       return null;
     }
   }
+
+  Future<List<dynamic>?> getMemberNames() async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.memberNameUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> membersNames = List<Map<String, dynamic>>.from(data['data']);
+        print(membersNames);
+        return membersNames;
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error fetching member details: $error');
+      return null;
+    }
+  }
 }
 
-class Taskapi{
+class TaskApi{
+
+  Future<List<dynamic>> getTaskDetails(int taskId) async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({'query': taskDetailsQuery(taskId)}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        List<dynamic> taskDetails = data['data']['tasks'];
+        print(taskDetails);
+        return taskDetails;
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return [];
+      }
+    } catch (error) {
+      print('Error fetching task details: $error');
+      return [];
+    }
+  }
+
 
   static Future<http.Response> fetchServiceProviderTypes() async {
 
@@ -441,33 +545,95 @@ class Taskapi{
 
 class InteractionApi {
 
-  Future<List<dynamic>> fetchDataTypes() async {
+  Future<List<dynamic>?> fetchInteractionDataTypes(from, to, carebuddy, pageNo, status, members,) async {
+
+
+
     String accessToken = await getFirebaseAccessToken();
-    final Map<String, String> headers = {
-      'Hasura-Client-Name': 'hasura-console',
-      'x-hasura-admin-secret': 'myadminsecret',
-      'content-type': 'application/json',
+    var headers = {
+      'Content-Type': ApiConstants.contentType,
+      'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+      'x-hasura-admin-secret': ApiConstants.adminSecret,
       'Authorization': 'Bearer $accessToken',
     };
-    String url = ApiConstants.interactionUrl;
 
-    final http.Response response = await http.post(
-      Uri.parse(url),
-      headers: headers,
+    var request = http.Request(
+      'POST',
+      Uri.parse(ApiConstants.interactionUrl),
     );
+    var requestBody = {};
+
+    if (from != null && to != null) {
+      requestBody['from'] = from;
+      requestBody['to'] = to;
+    }
+
+    if (carebuddy != null) {
+      requestBody['carebuddy'] = carebuddy;
+    }
+
+    if (pageNo != null) {
+      requestBody['page_no'] = pageNo;
+    }
+
+    if (status != null) {
+      requestBody['status'] = status;
+    }
+
+    if (members != null) {
+      requestBody['members'] = members;
+    }
+
+    request.headers.addAll(headers);
+    request.body = jsonEncode(requestBody);
+
+    http.StreamedResponse response = await request.send();
 
     if (response.statusCode == 200) {
-      final Map<String, dynamic> responseData = json.decode(response.body);
-      List<dynamic> fetchedInteractionMembers = responseData['interactionMembersData'];
-
-      print('fetchedInteractionMembers: $fetchedInteractionMembers'); // Add this line
-
-      return fetchedInteractionMembers;
+      String responseString = await response.stream.bytesToString();
+      Map<String, dynamic> responseData = json.decode(responseString);
+      List<dynamic>? interactionDetails = responseData['data'];
+      print('Interaction Members Data: $interactionDetails');
+      return interactionDetails;
     } else {
-      print('Error fetching data: ${response.reasonPhrase}');
-      return []; // Return an empty list in case of an error
+      print('API Error: ${response.reasonPhrase}');
+      return null;
     }
   }
+
+  Future<List<dynamic>> getInteractionDetails(int interactionId) async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({'query': interactionDetailsQuery(interactionId)}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['data'] != null && data['data']['interaction_members'] != null) {
+          List<dynamic> interactionDetails = data['data']['interaction_members'];
+          //print(interactionDetails);
+          return interactionDetails;
+        } else {
+          return []; // Return an empty list if there's no valid data
+        }
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return [];
+      }
+    } catch (error) {
+      print('Error fetching task details: $error');
+      return [];
+    }
+  }
+
 }
 
 class FCMMessaging {
@@ -500,6 +666,145 @@ class FCMMessaging {
     } catch (error) {
       print('Error fetching service provider types: $error');
       throw error;
+    }
+  }
+}
+
+class CalenderApi {
+
+  Future<Map<String, dynamic>?> fetchCalendarDetails(from , to ) async {
+    String accessToken = await getFirebaseAccessToken();
+    try{
+      var headers = {
+        'Content-Type': ApiConstants.contentType,
+        'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+        'x-hasura-admin-secret': ApiConstants.adminSecret,
+        'Authorization': 'Bearer $accessToken',
+      };
+
+      var requestBody = {
+        'from': from, // Assuming 'from' is a DateTime object
+        'to': to,     // Assuming 'to' is a DateTime object
+      };
+
+      var request = http.Request(
+        'POST',
+        Uri.parse(ApiConstants.calendarUrl),
+      );
+
+      request.headers.addAll(headers);
+      request.body = jsonEncode(requestBody);
+
+
+      http.StreamedResponse response = await request.send();
+
+      if (response.statusCode == 200) {
+        String responseString = await response.stream.bytesToString();
+        Map<String, dynamic> responseData = json.decode(responseString);
+        Map<String, dynamic> calenderDetail = responseData;
+        //print('Calendar data: $calenderDetail');
+        return calenderDetail;
+      }
+
+      else {
+        print('API Error: ${response.reasonPhrase} -  StatusCode : ${response.statusCode}');
+        var statusCode = response.statusCode;
+        print('tokenRefresher called');
+        await AccessTokenReFetcher().tokenReFetcher(fetchCalendarDetails(from , to ),statusCode);
+      }
+    }
+    catch (error) {
+      print('Error: $error');
+    }
+    return null;
+  }
+}
+
+
+class DashBoardApi {
+  Future<Map<String, dynamic>?> fetchDashBoardDetails() async {
+    String accessToken = await getFirebaseAccessToken();
+    try{
+      var headers = {
+        'Content-Type': ApiConstants.contentType,
+        'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+        'x-hasura-admin-secret': ApiConstants.adminSecret,
+        'Authorization': 'Bearer $accessToken',
+      };
+      var request = http.Request(
+        'POST',
+        Uri.parse(ApiConstants.dashboardMetricsUrl),
+      );
+
+      request.headers.addAll(headers);
+
+      http.StreamedResponse response = await request.send();
+
+      if (response.statusCode == 200) {
+        String responseString = await response.stream.bytesToString();
+        Map<String, dynamic> responseData = json.decode(responseString);
+        Map<String, dynamic> dashBoardDetail = responseData;
+        return dashBoardDetail;
+      }
+
+      else {
+        print('API Error: ${response.reasonPhrase} -  StatusCode : ${response.statusCode}');
+        var statusCode = response.statusCode;
+        print('tokenrefresher called');
+        await AccessTokenReFetcher().tokenReFetcher(fetchDashBoardDetails(),statusCode);
+      }
+    }
+    catch (error) {
+      print('Error: $error');
+    }
+    return null;
+  }
+
+}
+
+class AccessTokenReFetcher {
+
+  Future<void> tokenReFetcher(function , statusCode) async {
+    if(statusCode == 401)
+      {
+        try {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          String? uid = prefs.getString('uid');
+          String? accessToken = prefs.getString('firebaseAccessToken');
+
+          if (uid != null && accessToken != null) {
+            // UID and access token found in local storage
+            DateTime expiryTime = DateTime.fromMillisecondsSinceEpoch(prefs.getInt('accessTokenExpiry') ?? 0);
+
+            if (expiryTime.isBefore(DateTime.now())) {
+              // Access token is expired, refresh it
+              final user = FirebaseAuth.instance.currentUser;
+              if (user != null) {
+                await AccessToken().refreshAccessToken(user);
+                accessToken = prefs.getString('firebaseAccessToken');
+                expiryTime = DateTime.fromMillisecondsSinceEpoch(prefs.getInt('accessTokenExpiry') ?? 0);
+                print('new refresh token storeed');
+              }
+            }
+            if (expiryTime.isAfter(DateTime.now())) {
+              print('again the $function called');
+              // return await function;
+            }
+            else {
+              print('token expired');
+            }
+            print(accessToken);
+          }
+        } catch (e) {
+          print('Error refreshing access token: $e');
+        }
+      }
+    else if (statusCode == 404) {
+      return null;
+
+    }
+    else if (statusCode == 500) {
+      return null;
     }
   }
 }

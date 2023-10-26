@@ -7,21 +7,23 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
+import 'package:loading_indicator/loading_indicator.dart';
 import 'dart:convert';
 
 import '../../constants.dart';
 import '../../graphql_queries.dart';
+import '../../models/summaries_chat.dart';
 import '../../services/api_service.dart';
-import '../../summaries_chat.dart';
 
 class NewTaskDetailsScreen extends StatefulWidget {
-  final dynamic task;
+  final int taskId;
 
-  const NewTaskDetailsScreen({Key? key, required this.task}) : super(key: key);
+  const NewTaskDetailsScreen({Key? key, required this.taskId}) : super(key: key);
 
   @override
   State<NewTaskDetailsScreen> createState() => _NewTaskDetailsScreenState();
 }
+
 
 class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
   final TextEditingController _dueDateController = TextEditingController();
@@ -46,6 +48,8 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
   String fileName = ''; // Add this line
   List<String> taskSummaries = [];
   var memberId;
+  Map<String, dynamic> tasks = {}; // Add this line
+
 
 
   Widget buildInfoColumn(String title, Widget content, String assetImagePath) {
@@ -171,8 +175,8 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
       body: jsonEncode({
         'query': updateTaskQuery,
         'variables': {
-          'taskId': widget.task['id'],
-          'taskTitle': widget.task['task_title'],
+          'taskId': widget.taskId,
+          'taskTitle': tasks['task_title'],
           'dueDate': _dueDateController.text,
           'dueTime': _timeController.text,
           'taskStatusTypeId': selectedTaskStatusTypeId, // Use selected task status type
@@ -192,22 +196,36 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
     }
   }
 
+  Future<void> fetchTaskDetails() async {
+    List<dynamic> taskDetails = await TaskApi().getTaskDetails(widget.taskId);
+
+    // Now you can use the taskDetails list in this page
+    if (taskDetails.isNotEmpty) {
+       tasks = taskDetails[0];
+       _dueDateController.text = formatDueDate(tasks['due_date']);
+       _timeController.text = formatTime(tasks['due_time']);
+       _notesController.text = tasks['task_notes'] ?? '';
+       print('Tasks - $tasks');
+       _fetchMemberNames();
+       _loadTaskMemberSummaries();
+
+      // Do something with the task details
+    }
+  }
+
+
   @override
   void initState() {
     super.initState();
-    _dueDateController.text = formatDueDate(widget.task['due_date']);
-    _timeController.text = formatTime(widget.task['due_time']);
-    _notesController.text = widget.task['task_notes'] ?? '';
-    _fetchMemberNames();
+    fetchTaskDetails();
     _fetchTaskStatusTypes(); // Fetch task status types when the screen initializes
     _fetchServiceProviderTypes();
-    _loadTaskMemberSummaries();
   }
 
 
   Future<void> _fetchServiceProviderTypes() async {
     try {
-      final http.Response response = await Taskapi.fetchServiceProviderTypes();
+      final http.Response response = await TaskApi.fetchServiceProviderTypes();
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -226,9 +244,10 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
       print('Error fetching service provider types: $error');
     }
   }
-  // Fetch and populate member names from the task
+ // Fetch and populate member names from the task
   void _fetchMemberNames() {
-    final taskMembers = widget.task['task_members'] as List<dynamic>?;
+    final taskMembers = tasks['task_members'] as List<dynamic>?;
+
     if (taskMembers != null) {
       setState(() {
         memberNames = taskMembers
@@ -238,8 +257,10 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
             .toList();
       });
     }
-    print(memberNames);
+
+    print("members: $taskMembers");
   }
+
 
 
   // Fetch and populate task status types
@@ -343,7 +364,7 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
         body: jsonEncode({
           'query': updateInteractionAttachmentsQuery,
           'variables': {
-            'interactionId':widget.task['id'],
+            'interactionId':widget.taskId,
             'fileType': fileType,
             'url': url,
           },
@@ -476,32 +497,21 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
     );
   }
 
-  void _openChatPage() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SummariesChatPage(
-          selectedInteractionMember: {},
-          selectedTaskMember: widget.task, // Pass an empty map as selectedTaskMember
-        ),
-      ),
-    );
-  }
 
   void _loadTaskMemberSummaries() {
-    print('task summaries ${widget.task}');
-    if (widget.task != null) {
-      // Check if selectedTaskMember is not null
-      List<dynamic>? memberSummaries = widget.task['member_summaries'];
-      print(widget.task['id']);
-      if (widget.task != null) {
-        List<dynamic> taskMembers = widget.task['task_members'];
+    if (tasks != null && tasks.containsKey('member_summaries')) {
+      print('task summaries $tasks');
+
+      List<dynamic>? memberSummaries = tasks['member_summaries'];
+      print(tasks['id']);
+
+      if (tasks['task'] != null) {
+        List<dynamic> taskMembers = tasks['task']['task_members'];
         if (taskMembers.isNotEmpty) {
           memberId = taskMembers[0]['member']['id'];
-
           print(memberId);
         }
       }
-
 
       if (memberSummaries != null) {
         // Iterate through member summaries and extract notes
@@ -514,8 +524,12 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
           }
         }
       }
+    } else {
+      print('Member summaries not found in tasks.');
     }
   }
+
+
 
   void _handleSubmitted(String message) async {
     setState(() {
@@ -531,7 +545,7 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
         mutation =
             insertTaskChatSummaries; // Define your task-specific mutation
         variables = {
-          'taskId': widget.task['id'],
+          'taskId': widget.taskId,
           'memberId': memberId,
           'notes': message,
           // Add other task-related variables as needed
@@ -565,10 +579,9 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
   }
 
 
-  String? selectedTaskStatusType; // Store the selected task status type
-
   @override
   Widget build(BuildContext context) {
+
     List<Map<String, dynamic>> distinctServiceProviderTypes = [];
     for (var provider in serviceProviderTypes) {
       final serviceProviderId = provider['id'] as int;
@@ -579,9 +592,21 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
       }
     }
 
+
     return Scaffold(
       extendBodyBehindAppBar: true,
-      body: SingleChildScrollView(
+      body: tasks == null || tasks.isEmpty ?
+      Center(
+        child: SizedBox(
+          height: 40.h,
+          width: 40.w,
+          child: const LoadingIndicator(
+            indicatorType: Indicator.ballPulseSync,
+            colors: [Color(0xff006bbf)],
+          ),
+        ),
+      ) :
+      SingleChildScrollView(
         child: Padding(
           padding: EdgeInsets.only(bottom: 16.0.h),
           child: Column(
@@ -629,13 +654,13 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
                       alignment: Alignment.centerLeft,
                       padding: EdgeInsets.only(top: 20.0.h, bottom: 10.0.h, left: 20.0.w),
                       child: Text(
-                        widget.task['task_title']?? 'N/A',
+                        tasks['task_title'] ?? 'N/A',
                         style: TextStyle(
                           fontSize: 22.sp,
                           fontWeight: FontWeight.bold,
-                          color: widget.task['task_status_type_id'] == 1
-                              ? Color(int.parse('0xFF${widget.task['task_status_type']['color'].substring(1)}'))
-                              : null,
+                          color: tasks['task_status_type_id'] == 1
+                              ? Color(int.parse('0xFF${tasks['task_status_type']['color'].substring(1)}'))
+                              : Colors.black, // Change to default color if condition is not met
                         ),
                       ),
                     ),
@@ -704,27 +729,27 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
                     buildInfoColumn('Assigned by', Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Chip(
-                              backgroundColor: const Color(0xfff8e4ff),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8.0), // Adjust the radius to make it more squared
-                              ),
-                              label: Text(
-                                widget.task['user']['name'],
-                                style: TextStyle(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w500
-                                ),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Chip(
+                            backgroundColor: const Color(0xfff8e4ff),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8.0), // Adjust the radius to make it more squared
+                            ),
+                            label: Text(
+                              tasks['user']['name'] ?? 'N/A', // Added a null check for user name
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
                               ),
                             ),
                           ),
+                        ),
                       ],
                     ),'assets/icons/User circle.png'),
                 buildInfoColumn ('', DropdownButtonFormField2<int>(
                       focusNode: _dropdownFocusNode,
-                      value: selectedTaskStatusTypeId ?? widget.task['task_status_type_id'],
+                      value: selectedTaskStatusTypeId ?? tasks['task_status_type_id'],
                       items: taskStatusTypes.map((statusType) {
                         final colorString = statusType['color'] as String;
                         final color = Color(int.parse('0xFF${colorString.substring(1)}'));
@@ -769,9 +794,9 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
                     ),'assets/icons/Lightning bolt.png',),
                     buildInfoColumn( '', DropdownButtonFormField2<int>(
                       hint: SizedBox(
-                        // Set a fixed width for the hint text
+                        //Set a fixed width for the hint text
                         child: Text(
-                          widget.task['service_provider']['service_provider_type']['name'],
+                          tasks['service_provider']['service_provider_type']['name'],
                           style: const TextStyle(fontWeight: FontWeight.normal),
                           maxLines: 1, // Limit to one line
                           overflow: TextOverflow.ellipsis, // Handle overflow with ellipsis
@@ -925,13 +950,8 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          _openChatPage();
-        },
-        label: const Text('Summaries'),
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap, // Set the button size
-      ),
     );
   }
+
+  String? selectedTaskStatusType; // Store the selected task status type
 }

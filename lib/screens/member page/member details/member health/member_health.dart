@@ -8,6 +8,7 @@ import 'package:loading_indicator/loading_indicator.dart';
 import 'package:http/http.dart' as http;
 import '../../../../constants.dart';
 import '../../../../graphql_queries.dart';
+import '../../../../other_app_navigator.dart';
 import '../../../../services/api_service.dart';
 import '../member profile/member_profile_edit.dart';
 import 'member_health_edit.dart';
@@ -436,244 +437,6 @@ class _MemberHealthState extends State<MemberHealth> {
 
 
 
-  // void _createDoctorsAndEditDoctors(BuildContext context, {dynamic docdata, bool isNewDoctor = false}) {
-  //   print('Doctor - $docdata');
-  //
-  //   if(docdata != null){
-  //    selectDoctorId = docdata['doctor']['id'].toString();
-  //    // medicalCentersId = docdata['id'];
-  //   }
-  //   else{
-  //     selectDoctorId = null;
-  //   }
-  //
-  //   print('selectDoctorId - $selectDoctorId');
-  //   showModalBottomSheet(
-  //     context: context,
-  //     shape:  RoundedRectangleBorder(
-  //       borderRadius: BorderRadius.vertical(
-  //         top: Radius.circular(20.r),
-  //       ),
-  //     ),
-  //     isScrollControlled: true, // Allow the sheet to take up the full screen height
-  //     builder: (BuildContext context) {
-  //       return SingleChildScrollView(
-  //         child: Container(
-  //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-  //           child: Column(
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: [
-  //               Text(
-  //                 isNewDoctor ? 'Assign Doctor' : 'Update Doctor',
-  //                 style: TextStyle(
-  //                   fontSize: 24.sp,
-  //                   fontWeight: FontWeight.w400,
-  //                 ),
-  //               ),
-  //               Divider(
-  //                 height: 12.0.h,
-  //                 thickness: 1,
-  //               ),
-  //               // Add a DropdownButtonFormField for editing
-  //               Padding(
-  //                 padding: EdgeInsets.only(bottom: 100.0.h, top: 12.h),
-  //                 child: DropdownButtonFormField2<String>(
-  //                   value: selectDoctorId, // Set the selected value based on your logic
-  //                   onChanged: (String? newValue) {
-  //                     setState(() {
-  //                       selectDoctorId = newValue;
-  //                       print('new selectDoctorId - $selectDoctorId');
-  //                     });
-  //                   },
-  //                   items: doctorsList
-  //                       .map<DropdownMenuItem<String>>((Map<String, dynamic> doctor) {
-  //                     return DropdownMenuItem<String>(
-  //                       value: doctor['id'].toString(), // Use the ID as the value
-  //                       child: Text(
-  //                         doctor['name'],
-  //                         style: GoogleFonts.inter(
-  //                           textStyle: const TextStyle(
-  //                             color: Colors.black,
-  //                           ),
-  //                         ),
-  //                       ),
-  //                     );
-  //                   }).toList(),
-  //                   dropdownStyleData: DropdownStyleData(
-  //                     maxHeight: 150.h,
-  //                     // width: 300.w,
-  //                     decoration: BoxDecoration(
-  //                       borderRadius: BorderRadius.circular(14),
-  //                       color: Colors.white,
-  //                     ),
-  //                   ),
-  //                   style: TextStyle(
-  //                     fontSize: 16.sp,
-  //                   ),
-  //                   decoration: InputDecoration(
-  //                     label: const Text('Select Doctor'),
-  //                     hintText: 'Select Doctor',
-  //                     filled: true,
-  //                     fillColor: Colors.white,
-  //                     border: OutlineInputBorder(
-  //                       borderRadius: BorderRadius.circular(8.0),
-  //                       borderSide: const BorderSide(color: Colors.grey),
-  //                     ),
-  //                   ),
-  //                 ),
-  //               ),
-  //               Padding(
-  //                 padding: EdgeInsets.only(bottom: 20.0.h),
-  //                 child: ElevatedButton(
-  //                   onPressed: () {
-  //
-  //                     if (isNewDoctor) {
-  //                       insertDoctorDetails(widget.member['id'], int.parse(selectDoctorId!));
-  //                     } else {
-  //                       _updateMemberMedicalCenterDetails(medicalCentersId,widget.member['id'],int.parse(selectedMedicalCenterId!));
-  //                     }
-  //                   },
-  //                   style: ElevatedButton.styleFrom(
-  //                     foregroundColor: Colors.white, backgroundColor: Colors.blue, // Change the text color
-  //                     minimumSize: const Size(double.maxFinite, 50), // Set the button size
-  //                     shape: RoundedRectangleBorder(
-  //                       borderRadius: BorderRadius.circular(12.0.r), // Adjust the border radius as needed
-  //                     ),
-  //                     elevation: 3, // Add some shadow
-  //                   ),
-  //                   child: const Text(
-  //                     'Update',
-  //                     style: TextStyle(fontSize: 16),
-  //                   ),
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-  //
-  //
-  // void _createAndEditMedicalCenter(BuildContext context, {dynamic mcdata, bool isNewCenter = false}) {
-  //   print('centers - $mcdata');
-  //
-  //   if(mcdata != null){
-  //     selectedMedicalCenterId = mcdata['medical_center']['id'].toString();
-  //     medicalCentersId = mcdata['id'];
-  //     print(medicalCentersId);
-  //   }
-  //   else{
-  //     selectedMedicalCenterId = null;
-  //   }
-  //   print(selectedMedicalCenterId);
-  //   showModalBottomSheet(
-  //     context: context,
-  //     shape:  RoundedRectangleBorder(
-  //       borderRadius: BorderRadius.vertical(
-  //         top: Radius.circular(20.r),
-  //       ),
-  //     ),
-  //     isScrollControlled: true, // Allow the sheet to take up the full screen height
-  //     builder: (BuildContext context) {
-  //       return SingleChildScrollView(
-  //         child: Container(
-  //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-  //           child: Column(
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: [
-  //               Text(
-  //                 isNewCenter ? 'Create Medical Center' : 'Edit Medical Center',
-  //                 style: TextStyle(
-  //                   fontSize: 24.sp,
-  //                   fontWeight: FontWeight.w400,
-  //                 ),
-  //               ),
-  //               Divider(
-  //                 height: 12.0.h,
-  //                 thickness: 1,
-  //               ),
-  //               // Add a DropdownButtonFormField for editing
-  //               Padding(
-  //                 padding: EdgeInsets.only(bottom: 100.0.h, top: 12.h),
-  //                 child: DropdownButtonFormField2<String>(
-  //                   value: selectedMedicalCenterId, // Set the selected value based on your logic
-  //                   onChanged: (String? newValue) {
-  //                     setState(() {
-  //                       selectedMedicalCenterId = newValue;
-  //                       print('new selectedMedicalCenterId - $selectedMedicalCenterId');
-  //                     });
-  //                   },
-  //                   items: medicalCentersList
-  //                       .map<DropdownMenuItem<String>>((Map<String, dynamic> center) {
-  //                     return DropdownMenuItem<String>(
-  //                       value: center['id'].toString(), // Use the ID as the value
-  //                       child: Text(
-  //                         center['name'],
-  //                         style: GoogleFonts.inter(
-  //                           textStyle: const TextStyle(
-  //                             color: Colors.black,
-  //                           ),
-  //                         ),
-  //                       ),
-  //                     );
-  //                   }).toList(),
-  //                   dropdownStyleData: DropdownStyleData(
-  //                     maxHeight: 150.h,
-  //                     // width: 300.w,
-  //                     decoration: BoxDecoration(
-  //                       borderRadius: BorderRadius.circular(14),
-  //                       color: Colors.white,
-  //                     ),
-  //                   ),
-  //                   style: TextStyle(
-  //                     fontSize: 16.sp,
-  //                   ),
-  //                   decoration: InputDecoration(
-  //                     label: const Text('Select Medical Center'),
-  //                     hintText: 'Select Medical Center',
-  //                     filled: true,
-  //                     fillColor: Colors.white,
-  //                     border: OutlineInputBorder(
-  //                       borderRadius: BorderRadius.circular(8.0),
-  //                       borderSide: const BorderSide(color: Colors.grey),
-  //                     ),
-  //                   ),
-  //                 ),
-  //               ),
-  //               Padding(
-  //                 padding: EdgeInsets.only(bottom: 20.0.h),
-  //                 child: ElevatedButton(
-  //                   onPressed: () {
-  //                     if (isNewCenter) {
-  //                       _createNewMedicalCenter(int.parse(selectedMedicalCenterId!), widget.member['id']);
-  //                     } else {
-  //                       _updateMemberMedicalCenterDetails(medicalCentersId,widget.member['id'],int.parse(selectedMedicalCenterId!));
-  //                     }
-  //                   },
-  //                   style: ElevatedButton.styleFrom(
-  //                     foregroundColor: Colors.white, backgroundColor: Colors.blue, // Change the text color
-  //                     minimumSize: const Size(double.maxFinite, 50), // Set the button size
-  //                     shape: RoundedRectangleBorder(
-  //                       borderRadius: BorderRadius.circular(12.0.r), // Adjust the border radius as needed
-  //                     ),
-  //                     elevation: 3, // Add some shadow
-  //                   ),
-  //                   child: const Text(
-  //                     'Update',
-  //                     style: TextStyle(fontSize: 16),
-  //                   ),
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-
   Future<void> _createAndEditItem(BuildContext context, bool isNew, bool isDoctor, dynamic data) async {
     String? selectedItemId;
     String? selectedItemId2;
@@ -1005,24 +768,66 @@ class _MemberHealthState extends State<MemberHealth> {
   }
 
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String? value, {double fontSize = 14.0, FontWeight? fontWeight}) {
     return Padding(
-      padding:  EdgeInsets.all(10.0.h),
+      padding: EdgeInsets.all(10.0.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             '$label:',
-            style: TextStyle(fontSize: 14.0.sp),
+            style: TextStyle(fontSize: fontSize, fontWeight: fontWeight),
           ),
-          Text(
-            value,
-            style: TextStyle(fontSize: 14.0.sp),
+          value != null && label.toLowerCase() == 'location'
+              ? GestureDetector(
+            onTap: () {
+              // Handle location click action here
+              MapUtils.openMap(value);
+              print('Location clicked: $value');
+            },
+            child: Container(
+              width: 150, // Set a maximum width for the value text
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: fontWeight,
+                  color: Colors.blue, // Style it as a link
+                  decoration: TextDecoration.underline, // Underline it
+                ),
+              ),
+            ),
+          )
+              : label.toLowerCase() == 'agent number'
+              ? GestureDetector(
+            onTap: () {
+              makeCall.makePhoneCall('tel:$value');
+            },
+            child: Container(
+              width: 150, // Set a maximum width for the value text
+              child: Text(
+                value!,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: fontWeight,
+                  color: Colors.blue, // Style it as a link
+                  decoration: TextDecoration.underline, // Underline it
+                ),
+              ),
+            ),
+          )
+              : Container(
+            width: 150, // Set a maximum width for the value text
+            child: Text(
+              value ?? 'N/A',
+              style: TextStyle(fontSize: fontSize, fontWeight: fontWeight),
+            ),
           ),
         ],
       ),
     );
   }
+
 
 
   @override
@@ -1060,10 +865,11 @@ class _MemberHealthState extends State<MemberHealth> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Blood Group', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['blood_group'] != null ? memberHealthDetails[0]['blood_group'] : 'N/A'),
-                _buildInfoRow('Vitacuro ID', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['vitacuro_id'] != null ? memberHealthDetails[0]['vitacuro_id'] : 'N/A'),
-                _buildInfoRow('Date Of Birth', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['dob'] != null ? memberHealthDetails[0]['dob'] : 'N/A'),
-                _buildInfoRow('History', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['medical_history'] != null ? memberHealthDetails[0]['medical_history'] : 'N/A'),
+
+                _buildInfoRow('Blood Group', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['blood_group'] != null ? memberHealthDetails[0]['blood_group'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Vitacuro ID', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['vitacuro_id'] != null ? memberHealthDetails[0]['vitacuro_id'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Date Of Birth', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['dob'] != null ? memberHealthDetails[0]['dob'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('History', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['medical_history'] != null ? memberHealthDetails[0]['medical_history'] : 'N/A',fontSize: 14.0.sp),
               ],
             ),
           ),
@@ -1267,11 +1073,11 @@ class _MemberHealthState extends State<MemberHealth> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Insure', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['insurer'] : 'N/A'),
-                _buildInfoRow('Policy Number', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['policy_number'] : 'N/A'),
-                _buildInfoRow('Valid Till', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['valid_till'] : 'N/A'),
-                _buildInfoRow('Agent Name', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['agent_name'] : 'N/A'),
-                _buildInfoRow('Agent Number', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['agent_number'] : 'N/A'),
+                _buildInfoRow('Insure', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['insurer'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Policy Number', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['policy_number'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Valid Till', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['valid_till'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Agent Name', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['agent_name'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Agent Number', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['agent_number'] : 'N/A',fontSize: 14.0.sp),
                 if (memberHealthDetails.isEmpty)
                   Center(
                     child: Text(

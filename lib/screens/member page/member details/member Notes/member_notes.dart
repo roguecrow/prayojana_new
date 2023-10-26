@@ -94,49 +94,51 @@ class _MemberNotesState extends State<MemberNotes> {
       builder: (BuildContext context) {
         return Container(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Details',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w400,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Details',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
-              ),
-              const Divider(
-                height: 30.0,
-                thickness: 1,
-              ),
-              ListTile(
-                leading: const Icon(Icons.title),
-                title: const Text('Title'),
-                subtitle: Text(interaction['interaction']['title'] ?? 'N/A'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.date_range),
-                title: const Text('Interaction Date'),
-                subtitle: Text(
-                  interaction['interaction']['interaction_date'] != null
-                      ? DateFormat('dd MMM yyyy').format(DateTime.parse(interaction['interaction']['interaction_date']))
-                      : 'N/A',
+                const Divider(
+                  height: 30.0,
+                  thickness: 1,
                 ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.notes),
-                title: const Text('Notes'),
-                subtitle: Text(
-                  interaction['interaction']['member_summaries'] != null && interaction['interaction']['member_summaries'].isNotEmpty
-                      ? interaction['interaction']['member_summaries'][0]['notes']
-                      : 'N/A',
+                ListTile(
+                  leading: const Icon(Icons.title),
+                  title: const Text('Title'),
+                  subtitle: Text(interaction['interaction']['title'] ?? 'N/A'),
                 ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.candlestick_chart),
-                title: const Text('Status Type'),
-                subtitle: Text(interaction['interaction']['interaction_status_type']['name'] ?? 'N/A'),
-              ),
-            ],
+                ListTile(
+                  leading: const Icon(Icons.date_range),
+                  title: const Text('Interaction Date'),
+                  subtitle: Text(
+                    interaction['interaction']['interaction_date'] != null
+                        ? DateFormat('dd MMM yyyy').format(DateTime.parse(interaction['interaction']['interaction_date']))
+                        : 'N/A',
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.notes),
+                  title: const Text('Notes'),
+                  subtitle: Text(
+                    interaction['interaction']['member_summaries'] != null && interaction['interaction']['member_summaries'].isNotEmpty
+                        ? interaction['interaction']['member_summaries'][0]['notes']
+                        : 'N/A',
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.candlestick_chart),
+                  title: const Text('Status Type'),
+                  subtitle: Text(interaction['interaction']['interaction_status_type']['name'] ?? 'N/A'),
+                ),
+              ],
+            ),
           ),
         );
       },

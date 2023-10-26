@@ -113,72 +113,74 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
                   height: 30.0,
                   thickness: 1,
                 ),
-                  Column(
-                    children: [
-                      ListTile(
-                        leading: const Icon(Icons.playlist_add_check_rounded),
-                        title: const Text('Plan'),
-                        subtitle: Text(
-                          planhistory != null &&
-                              planhistory['plan'] != null &&
-                              planhistory['plan']['name'] != null
-                              ? planhistory['plan']['name']
-                              : 'N/A',
+                  SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.playlist_add_check_rounded),
+                          title: const Text('Plan'),
+                          subtitle: Text(
+                            planhistory != null &&
+                                planhistory['plan'] != null &&
+                                planhistory['plan']['name'] != null
+                                ? planhistory['plan']['name']
+                                : 'N/A',
+                          ),
                         ),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.date_range),
-                        title: const Row(
-                          children: [
-                            Text('Start Date'),
-                            Spacer(), // Add a spacer to push the End Date to the right
-                            Text('End Date'),
-                          ],
+                        ListTile(
+                          leading: const Icon(Icons.date_range),
+                          title: const Row(
+                            children: [
+                              Text('Start Date'),
+                              Spacer(), // Add a spacer to push the End Date to the right
+                              Text('End Date'),
+                            ],
+                          ),
+                          subtitle: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Text(planhistory['start_date'] ?? 'N/A'),
+                              const Spacer(), // Add a spacer to push the End Date to the right
+                              Text(planhistory['end_date'] ?? 'N/A'),
+                            ],
+                          ),
                         ),
-                        subtitle: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Text(planhistory['start_date'] ?? 'N/A'),
-                            const Spacer(), // Add a spacer to push the End Date to the right
-                            Text(planhistory['end_date'] ?? 'N/A'),
-                          ],
+                        ListTile(
+                          leading: const Icon(Icons.date_range),
+                          title: const Row(
+                            children: [
+                              Text('Plan Amount'),
+                              Spacer(), // Add a spacer to push the End Date to the right
+                              Text('Amount Paid'),
+                            ],
+                          ),
+                          subtitle: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Text(planhistory['plan_amount']?.toString() ?? 'N/A'),
+                              const Spacer(), // Add a spacer to push the End Date to the right
+                              Text(planhistory['amount_paid']?.toString() ?? 'N/A'),
+                            ],
+                          ),
                         ),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.date_range),
-                        title: const Row(
-                          children: [
-                            Text('Plan Amount'),
-                            Spacer(), // Add a spacer to push the End Date to the right
-                            Text('Amount Paid'),
-                          ],
-                        ),
-                        subtitle: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Text(planhistory['plan_amount']?.toString() ?? 'N/A'),
-                            const Spacer(), // Add a spacer to push the End Date to the right
-                            Text(planhistory['amount_paid']?.toString() ?? 'N/A'),
-                          ],
-                        ),
-                      ),
 
-                      ListTile(
-                        leading: const Icon(Icons.date_range),
-                        title: const Text('Payment Date'),
-                        subtitle: Text(planhistory['payment_date'] ?? 'N/A'),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.type_specimen),
-                        title: const Text('Payment Type'),
-                        subtitle: Text(planhistory['payment_type'] ?? 'N/A'),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.link),
-                        title: const Text('Payment ID & Link'),
-                        subtitle: Text('${planhistory['payment_id']} - ${planhistory['link']}' ?? 'N/A'),
-                      ),
-                    ],
+                        ListTile(
+                          leading: const Icon(Icons.date_range),
+                          title: const Text('Payment Date'),
+                          subtitle: Text(planhistory['payment_date'] ?? 'N/A'),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.type_specimen),
+                          title: const Text('Payment Type'),
+                          subtitle: Text(planhistory['payment_type'] ?? 'N/A'),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.link),
+                          title: const Text('Payment ID & Link'),
+                          subtitle: Text('${planhistory['payment_id']} - ${planhistory['link']}' ?? 'N/A'),
+                        ),
+                      ],
+                    ),
                   ),
               ],
             ),

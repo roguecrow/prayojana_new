@@ -7,22 +7,19 @@ import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:loading_indicator/loading_indicator.dart';
 import '../../constants.dart';
 import '../../graphql_queries.dart';
+import '../../models/summaries_chat.dart';
 import '../../services/api_service.dart';
 import 'package:file_picker/file_picker.dart';
-import '../../summaries_chat.dart';
-import '../tasks page/create_new_task.dart';
 import '../tasks page/create_new_task_new.dart';
 
 class InteractionDetailsScreenNew extends StatefulWidget {
 
-  final Map<String, dynamic> selectedInteractionMember;
+  final int interactionId;
 
-  const InteractionDetailsScreenNew({
-    Key? key,
-    required this.selectedInteractionMember,
-  }) : super(key: key);
+  const InteractionDetailsScreenNew({Key? key, required this.interactionId}) : super(key: key);
 
   @override
   State<InteractionDetailsScreenNew> createState() => _InteractionDetailsScreenNewState();
@@ -42,6 +39,8 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
   List<String> _fileNames = [];
   List<File> fileToDisplay = [];
   List<String> interactionSummaries = [];
+  Map<String, dynamic> selectedInteractionMember = {}; // Add this line
+
 
   // final TextEditingController _locationController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
@@ -51,27 +50,39 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
 
 
 
-
   @override
   void initState() {
     super.initState();
-    _dueDateController.text = formatDueDate(widget.selectedInteractionMember['interaction']['interaction_date'] ?? '');
-    _interactionController.text = widget.selectedInteractionMember['interaction']['title'];
-    _notesController.text = widget.selectedInteractionMember['interaction']['notes'];
-    _fetchMemberName();
+    fetchInteractionDetails();
     _fetchInteractionTypes();
     _fetchInteractionStatusTypes();
-    _loadInteractionMemberSummaries();
+  }
+
+  Future<void> fetchInteractionDetails() async {
+    List<dynamic> interactionDetails = await InteractionApi().getInteractionDetails(widget.interactionId);
+    // Now you can use the taskDetails list in this page
+    if (interactionDetails.isNotEmpty) {
+      selectedInteractionMember = interactionDetails[0];
+      _dueDateController.text = formatDueDate(selectedInteractionMember['interaction']['interaction_date'] ?? '');
+      _interactionController.text = selectedInteractionMember['interaction']['title'];
+      _notesController.text = selectedInteractionMember['interaction']['notes'];
+      selectedInteractionStatusTypeId = selectedInteractionMember['interaction']['interaction_status_type_id'];
+
+      print('selectedInteractionMember - $selectedInteractionMember');
+      _fetchMemberName();
+      _loadInteractionMemberSummaries();
+      // Do something with the task details
+    }
   }
 
   void _fetchMemberName() {
-    final memberName = widget.selectedInteractionMember['member']['name'] as String?;
+    final memberName = selectedInteractionMember['member']['name'] as String?;
     if (memberName != null) {
       setState(() {
         memberNames = [memberName];
       });
     }
-    print(memberNames);
+    print('memberName - $memberNames');
   }
 
   void _fetchInteractionTypes() async {
@@ -170,7 +181,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
         body: jsonEncode({
           'query': updateInteractionAttachmentsQuery,
           'variables': {
-            'interactionId': widget.selectedInteractionMember['interaction']['id'],
+            'interactionId': selectedInteractionMember['interaction']['id'],
             'fileType': fileType,
             'url': url,
           },
@@ -401,10 +412,9 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
   void _loadInteractionMemberSummaries() {
     // You can access the selectedInteractionMember using widget.selectedInteractionMember
     // Assuming member_summaries is an array of objects
-    print('interaction summaries ${widget.selectedInteractionMember}');
-    if(widget.selectedInteractionMember!=null){
-      List<dynamic>? memberSummaries = widget
-          .selectedInteractionMember['interaction']['member_summaries'];
+    print('interaction summaries ${selectedInteractionMember}');
+    if(selectedInteractionMember!=null){
+      List<dynamic>? memberSummaries = selectedInteractionMember['interaction']['member_summaries'];
 
       if (memberSummaries != null) {
         // Iterate through member summaries and extract notes
@@ -460,7 +470,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
       body: jsonEncode({
         'query': updateInteractionQuery,
         'variables': {
-          'id': widget.selectedInteractionMember['interaction']['id'],
+          'id': selectedInteractionMember['interaction']['id'],
           'interactionTypeId': selectedInteractionTypeId,
           'interactionStatusTypeId': selectedInteractionStatusTypeId,
           'newNotes': _notesController.text,
@@ -488,7 +498,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => SummariesChatPage(
-          selectedInteractionMember: widget.selectedInteractionMember,
+          selectedInteractionMember: selectedInteractionMember,
           selectedTaskMember: {}, // Pass an empty map as selectedTaskMember
         ),
       ),
@@ -508,10 +518,9 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
         // If selectedInteractionMember has data, use interaction-related variables
         mutation = insertInChatSummaries;
         variables = {
-          'memberId': widget.selectedInteractionMember['member_id'],
+          'memberId': selectedInteractionMember['member_id'],
           'notes': message,
-          'interactionId': widget
-              .selectedInteractionMember['interaction']['id'],
+          'interactionId': selectedInteractionMember['interaction']['id'],
         };
 
       // Make the HTTP POST request
@@ -549,7 +558,18 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
     // final selectedInteractionMember = widget.selectedInteractionMember;
     return Scaffold(
       extendBodyBehindAppBar: true,
-      body: SingleChildScrollView(
+      body: selectedInteractionMember == null || selectedInteractionMember.isEmpty ?
+      Center(
+        child: SizedBox(
+          height: 40.h,
+          width: 40.w,
+          child: const LoadingIndicator(
+            indicatorType: Indicator.ballPulseSync,
+            colors: [Color(0xff006bbf)],
+          ),
+        ),
+      )
+      : SingleChildScrollView(
         child: Column(
           children: [
             Padding(
@@ -597,7 +617,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                     alignment: Alignment.centerLeft,
                     padding: EdgeInsets.only(top: 30.0.h, bottom: 20.0.h, left: 20.0.w),
                     child: Text(
-                      widget.selectedInteractionMember['interaction']['title'],
+                      selectedInteractionMember['interaction']['title'],
                       style: TextStyle(
                         fontSize: 24.sp,
                         fontWeight: FontWeight.bold,
@@ -659,13 +679,13 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
 
                   buildInfoColumn( '', DropdownButtonFormField2<int>(
                     focusNode: _dropdownFocusNode,
-                    value: selectedInteractionTypeId ?? widget.selectedInteractionMember['interaction']['interaction_type_id'],
+                    value: selectedInteractionTypeId ?? selectedInteractionMember['interaction']['interaction_type_id'],
                     items: interactionTypes.map((statusType) {
-                      print('type id ${widget.selectedInteractionMember['interaction']['interaction_type_id']}');
+                      print('type id ${selectedInteractionMember['interaction']['interaction_type_id']}');
                       print('selectedInteractionTypeId $selectedInteractionTypeId');
                       print('typename ${statusType['name']}');
-                      print(widget.selectedInteractionMember['interaction']['id']);
-                      print(widget.selectedInteractionMember['member_id']);
+                      print(selectedInteractionMember['interaction']['id']);
+                      print(selectedInteractionMember['member_id']);
                       return DropdownMenuItem<int>(
                         value: statusType['id'],
                         child: Text(
@@ -700,8 +720,8 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                   ),'assets/icons/Chat alt 2.png'),
                   buildInfoColumn('', DropdownButtonFormField2<int>(
                     focusNode: _dropdownFocusNode,
-                    value: selectedInteractionStatusTypeId ?? (widget.selectedInteractionMember['interaction'] != null
-                        ? widget.selectedInteractionMember['interaction']['interaction_status_type_id']
+                    value: selectedInteractionStatusTypeId ?? (selectedInteractionMember['interaction'] != null
+                        ? selectedInteractionMember['interaction']['interaction_status_type_id']
                         : null),
                     items: interactionStatusTypes.map((statusType) {
                       // print('updated interaction_status_types ${(widget.selectedInteractionMember['interaction']['interaction_status_type'] != null
@@ -788,7 +808,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (context) => CreateTaskNew(memberId: widget.selectedInteractionMember['member_id']), // Pass the memberId
+                                builder: (context) => CreateTaskNew(memberId: selectedInteractionMember['member_id']), // Pass the memberId
                               ),
                             );
                           },

@@ -6,6 +6,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants.dart';
 import '../../graphql_queries.dart';
 import '../../services/api_service.dart';
@@ -27,6 +28,8 @@ class CreateTaskNew extends StatefulWidget {
 }
 
 class _CreateTaskNewState extends State<CreateTaskNew> {
+
+
   final TextEditingController _taskTitleController = TextEditingController();
   final TextEditingController _taskNotesController = TextEditingController();
   final TextEditingController _memberController = TextEditingController();
@@ -53,53 +56,33 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
   @override
   void initState() {
     super.initState();
+    getCareBuddyId();
     _fetchAvailableMembers();
     _fetchServiceProviderTypes();
   }
 
-  Future<List<Member>> getAllMembers() async {
-    String accessToken = await getFirebaseAccessToken();
-    var headers = {
-      'Content-Type': ApiConstants.contentType,
-      'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
-      'x-hasura-admin-secret': ApiConstants.adminSecret,
-      'Authorization': 'Bearer $accessToken',
-    };
-
-    var request = http.Request(
-      'POST',
-      Uri.parse(ApiConstants.memberListUrl),
-    );
-
-    request.headers.addAll(headers);
-
-    http.StreamedResponse response = await request.send();
-
-    if (response.statusCode == 200) {
-      String responseString = await response.stream.bytesToString();
-      Map<String, dynamic> responseData = json.decode(responseString);
-      List<dynamic>? memberData = responseData['memberData'];
-      careBuddyId = responseData['user_id'];
-      print(careBuddyId);
-
-      if (memberData != null) {
-        List<Member> allMembers = memberData.map((member) {
-          return Member(id: member['id'], name: member['name']);
-        }).toList();
-        print(allMembers);
-        return allMembers;
-      } else {
-        print('List Empty');
-        return [];
-      }
-    } else {
-      print('API Error: ${response.reasonPhrase}');
-      return [];
-    }
+  Future<void> getCareBuddyId() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    int? userId = prefs.getInt('userId');
+    careBuddyId = userId ?? 0; // Use 0 as a default value (or choose a suitable default)
+    print('from local - $careBuddyId');
   }
 
+
   Future<void> _fetchAvailableMembers() async {
-    List<Member> availableMembers = await getAllMembers();
+    List<Member> availableMembers;
+    List<dynamic>? memberData = await MemberApi().getMemberNames();
+    if (memberData != null) {
+      List<Member> allMembers = memberData.map((member) {
+        return Member(id: member['id'], name: member['name']);
+      }).toList();
+        availableMembers = allMembers;
+      print(allMembers);
+    } else {
+        availableMembers = [];
+      print('List Empty');
+    }
+
     setState(() {
       _availableMembers = availableMembers;
     });
@@ -107,6 +90,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
       print('Available Member: ${member.name}');
     }
   }
+
 
   void _handleMemberSelection(Member selectedMember) {
     // Handle the selected member
@@ -154,7 +138,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
 
   Future<void> _fetchServiceProviderTypes() async {
     try {
-      final http.Response response = await Taskapi.fetchServiceProviderTypes();
+      final http.Response response = await TaskApi.fetchServiceProviderTypes();
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -175,7 +159,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
   }
 
   Future<void> _insertTask() async {
-    print(careBuddyId);
+    print('carebuddy - $careBuddyId');
     String accessToken = await getFirebaseAccessToken();
     var headers = {
       'Content-Type': ApiConstants.contentType,

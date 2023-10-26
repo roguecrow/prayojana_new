@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:prayojana_new/bottom_navigaton.dart';
+import 'package:prayojana_new/models/bottom_navigaton.dart';
 import 'package:prayojana_new/firebase_options.dart';
 import 'package:prayojana_new/screens/splash_screen.dart';
 import 'package:prayojana_new/services/firebase_api.dart';
