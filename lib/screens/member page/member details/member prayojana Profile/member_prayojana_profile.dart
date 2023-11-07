@@ -40,6 +40,25 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
     super.dispose();
   }
 
+
+  String formatDob(String dob) {
+    if (dob == null || dob.isEmpty || dob == 'N/A') return 'N/A';
+
+    try {
+      // Split the date string by spaces
+      List<String> parts = dob.split(' ');
+
+      // Take the relevant parts: Sat Aug 12 1939
+      String formattedDob = '${parts[0]} ${parts[1]} ${parts[2]} ${parts[3]}';
+
+      return formattedDob;
+    } catch (e) {
+      print('Error parsing date: $e');
+      return dob;
+    }
+  }
+
+
   Widget _buildInfoRow(String label, dynamic value, {double fontSize = 14.0, FontWeight? fontWeight}) {
     return Padding(
       padding: EdgeInsets.all(10.0.h),
@@ -139,9 +158,9 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
                           subtitle: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              Text(planhistory['start_date'] ?? 'N/A'),
+                              Text(formatDob(planhistory['start_date'] ?? 'N/A')),
                               const Spacer(), // Add a spacer to push the End Date to the right
-                              Text(planhistory['end_date'] ?? 'N/A'),
+                              Text(formatDob(planhistory['end_date'] ?? 'N/A')),
                             ],
                           ),
                         ),
@@ -167,7 +186,7 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
                         ListTile(
                           leading: const Icon(Icons.date_range),
                           title: const Text('Payment Date'),
-                          subtitle: Text(planhistory['payment_date'] ?? 'N/A'),
+                          subtitle: Text(formatDob(planhistory['payment_date'] ?? 'N/A')),
                         ),
                         ListTile(
                           leading: const Icon(Icons.type_specimen),

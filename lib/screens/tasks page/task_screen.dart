@@ -36,6 +36,9 @@ class _TaskScreenState extends State<TaskScreen> {
   bool isTodayButtonPressed = false;
   bool isWeekButtonPressed = false;
   bool isFilterButtonPressed = false;
+  final scrollController = ScrollController();
+  int page = 1;
+  int fetchedLen = 10;
 
   Color getButtonColor(bool isPressed) =>
       isPressed ? const Color(0xff6b7280) : Colors.transparent;
@@ -58,10 +61,12 @@ class _TaskScreenState extends State<TaskScreen> {
   void handleTodayButtonPress() async {
     if (isTodayButtonPressed) {
       print('empty 1');
+      _taskData = null;
       await fetchTaskData(null, null, null, null, null, null);
     } else {
       print('today');
       DateTime today = DateTime.now();
+      _taskData = null;
       await fetchTaskData(today, today, null, null, null, null);
     }
     updateButtonStates(today: !isTodayButtonPressed, week: false, filter: false);
@@ -70,8 +75,12 @@ class _TaskScreenState extends State<TaskScreen> {
   void handleWeekButtonPress() async {
     if (isWeekButtonPressed) {
       print('empty 2');
+      _taskData = null;
+
       await fetchTaskData(null, null, null, null, null, null);
     } else {
+      _taskData = null;
+
       DateTime endOfWeek = startOfWeek.add(const Duration(days: 6));
       print('week');
       await fetchTaskData(startOfWeek, endOfWeek, null, null, null, null);
@@ -147,15 +156,15 @@ class _TaskScreenState extends State<TaskScreen> {
                                       },
                                       tileColor: selectedTileIndex == 0 ? const Color(0xfff1f9ff) : null,
                                     ),
-                                    ListTile(
-                                      title:  Text('Due Date',style: TextStyle(color: selectedTileIndex == 1 ?  const Color(0xff006bbf) : null)),
-                                      onTap: () {
-                                        setState(() {
-                                          selectedTileIndex = 1;
-                                        });
-                                      },
-                                      tileColor: selectedTileIndex == 1 ? const Color(0xfff1f9ff) : null,
-                                    ),
+                                    // ListTile(
+                                    //   title:  Text('Due Date',style: TextStyle(color: selectedTileIndex == 1 ?  const Color(0xff006bbf) : null)),
+                                    //   onTap: () {
+                                    //     setState(() {
+                                    //       selectedTileIndex = 1;
+                                    //     });
+                                    //   },
+                                    //   tileColor: selectedTileIndex == 1 ? const Color(0xfff1f9ff) : null,
+                                    // ),
                                     ListTile(
                                       title:  Text('Members',style: TextStyle(color: selectedTileIndex == 2 ?  const Color(0xff006bbf) : null)),
                                       onTap: () {
@@ -280,6 +289,7 @@ class _TaskScreenState extends State<TaskScreen> {
                                 ElevatedButton(
                                   onPressed: () async {
                                     print('apply');
+                                    _taskData = null;
                                     await fetchTaskData(null, null, null, null, selectedStatusIds, selectedMemberIds);
                                     Navigator.pop(context); // Close the bottom sheet
                                     // Handle apply button press
@@ -313,6 +323,7 @@ class _TaskScreenState extends State<TaskScreen> {
     fetchTaskData(null, null, null, null, null, null);
     fetchMemberNames();
     _fetchTaskStatusTypes(); // Fetch task status types when the screen initializes
+    scrollController.addListener(_scrollListener);
   }
 
   void fetchMemberNames() async {
@@ -345,9 +356,13 @@ class _TaskScreenState extends State<TaskScreen> {
     }
 
 
-    List<dynamic>? newTasks = await MemberApi().fetchTaskMembersData(formattedFrom,formattedTo, null, null,formattedStatus , formattedMember);
+    List<dynamic>? newTasks = await MemberApi().fetchTaskMembersData(formattedFrom,formattedTo, null, pageNo ,formattedStatus , formattedMember);
     setState(() {
-      _taskData = newTasks;
+      _taskData = [...?_taskData, ...newTasks!]; // Concatenate the new data
+      print('PAGE NO $pageNo - _TASK DATA $_taskData');
+      print('newTask - $newTasks');
+      fetchedLen = newTasks.length;
+      print('fetchedLen - $fetchedLen');
     });
 
     _taskData ??= [];
@@ -479,6 +494,7 @@ class _TaskScreenState extends State<TaskScreen> {
                 : _taskData!.isEmpty
                 ? const Center(child: Text('No data to show.'))
                 : ListView.separated(
+              controller: scrollController ,
               physics: const BouncingScrollPhysics(),
               itemBuilder: (context, index) {
                   var taskEntry = _taskData![index];
@@ -487,10 +503,9 @@ class _TaskScreenState extends State<TaskScreen> {
                     var taskTitle = taskEntry['task_title'];
                     var dueDate = taskEntry['due_date'];
                     var taskStatusType = taskEntry['tst_name'];
-                    var spName = taskEntry['sp_name'];
+                    var cbName = taskEntry['carebuddy_name'];
                     var statusColor = taskEntry['tst_color'];
                     var taskId = taskEntry['id'];
-
                     return SizedBox(
                       height: 80.h, // Adjust the height as needed
                       child: ListTile(
@@ -519,7 +534,7 @@ class _TaskScreenState extends State<TaskScreen> {
                               ),
                               SizedBox(height: 4.h),
                               Text(
-                                'Assigned to: $spName',
+                                'Assigned to: $cbName',
                                 style: TextStyle(
                                   fontSize: 14.sp,
                                   fontWeight: FontWeight.w400,
@@ -564,6 +579,21 @@ class _TaskScreenState extends State<TaskScreen> {
     );
   }
 
+  void _scrollListener() {
+    if (!isLoading && scrollController.position.pixels == scrollController.position.maxScrollExtent && fetchedLen == 10) {
+      setState(() {
+        isLoading = true; // Set loading state to true
+      });
+      page = page + 1;
+      fetchTaskData(null, null, null, page, null, null).then((_) {
+        setState(() {
+          isLoading = false; // Set loading state to false after data is loaded
+        });
+      });
+    }
+  }
+
+
 
   void _navigateToTaskDetailsScreen(int taskId) async {
     print(taskId);
@@ -571,16 +601,12 @@ class _TaskScreenState extends State<TaskScreen> {
       context,
       MaterialPageRoute(builder: (context) =>  NewTaskDetailsScreen(taskId: taskId)),
     );
-    if (shouldUpdate == true) {
-      if(selectedMemberIds.isNotEmpty || selectedStatusIds.isNotEmpty){
-        fetchTaskData(null, null, null, null, selectedStatusIds, selectedMemberIds);
-      }
-      else {
-        fetchTaskData(null,null, null, null, null, null);
-      }
-      // Refresh the task data after updating
+    if(shouldUpdate == true) {
+      _taskData = null;
+      fetchTaskData(null,null, null, null, null, null);
     }
   }
+
   void _navigateToCreateTaskScreen() async {
     final shouldCreate= await Navigator.push(
       context,
@@ -588,6 +614,7 @@ class _TaskScreenState extends State<TaskScreen> {
     );
 
     if (shouldCreate == true) {
+      _taskData = null;
       // Refresh the task data after updating
       fetchTaskData(null,null, null, null, null, null);
     }

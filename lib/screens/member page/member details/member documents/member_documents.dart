@@ -43,6 +43,7 @@ class _MemberDocumentsState extends State<MemberDocuments> {
         print(isLoading);
         print(memberDocumentDetails);
       });
+      print(memberDocumentDetails);
     } else {
       setState(() {
         isLoading = false;

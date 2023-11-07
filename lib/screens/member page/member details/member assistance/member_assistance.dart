@@ -177,7 +177,7 @@ class _MemberAssistanceState extends State<MemberAssistance> {
           Padding(
             padding:  EdgeInsets.only(left: 22.0.w),
             child: Text(
-              'assistance Members',
+              'Assistance Members',
               style: TextStyle(color: Colors.grey[600], fontSize: 16.0.sp, fontWeight: FontWeight.bold),
             ),
           ),

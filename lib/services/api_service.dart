@@ -20,7 +20,7 @@ Future<String> getFirebaseAccessToken() async {
     if (user != null) {
       await AccessToken().refreshAccessToken(user);
       expiryTime = DateTime.fromMillisecondsSinceEpoch(prefs.getInt('accessTokenExpiry') ?? 0);
-      print('new refresh token storeed');
+      print('new refresh token stored');
     }
   }
   return prefs.getString('firebaseAccessToken') ?? '';
@@ -66,7 +66,14 @@ class ApiService {
 
 
 class MemberApi {
-  Future<List<dynamic>?> fetchMembersData() async {
+  Future<List<dynamic>?> fetchMembersData(carebuddy , pageNo, statusList, plans, locality) async {
+
+    print('carebuddy - $carebuddy');
+    print('pageNo - $pageNo');
+    print('status - $statusList');
+    print('plans - $plans');
+    print('locality - $locality');
+
     String accessToken = await getFirebaseAccessToken();
     var headers = {
       'Content-Type': ApiConstants.contentType,
@@ -74,6 +81,26 @@ class MemberApi {
       'x-hasura-admin-secret': ApiConstants.adminSecret,
       'Authorization': 'Bearer $accessToken',
     };
+    var requestBody = {};
+
+    if (carebuddy != null) {
+      requestBody['carebuddy'] = carebuddy;
+    }
+
+    if (pageNo != null) {
+      requestBody['page_no'] = pageNo;
+    }
+
+    if (statusList != null) {
+      requestBody['status'] = statusList;
+    }
+
+    if (plans != null) {
+      requestBody['plan'] = plans;
+    }
+    if (locality != null) {
+      requestBody['locality'] = locality;
+    }
 
     var request = http.Request(
       'POST',
@@ -81,6 +108,8 @@ class MemberApi {
     );
 
     request.headers.addAll(headers);
+    request.body = jsonEncode(requestBody);
+
 
     http.StreamedResponse response = await request.send();
 
@@ -547,8 +576,6 @@ class InteractionApi {
 
   Future<List<dynamic>?> fetchInteractionDataTypes(from, to, carebuddy, pageNo, status, members,) async {
 
-
-
     String accessToken = await getFirebaseAccessToken();
     var headers = {
       'Content-Type': ApiConstants.contentType,
@@ -624,7 +651,8 @@ class InteractionApi {
         } else {
           return []; // Return an empty list if there's no valid data
         }
-      } else {
+      }
+      else {
         print('API Error: ${response.reasonPhrase}');
         return [];
       }
@@ -638,25 +666,29 @@ class InteractionApi {
 
 class FCMMessaging {
 
-  static Future<http.Response> postFCMToken() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? storedFCMToken = prefs.getString('FCMToken');
-
+  static Future<http.Response> postFCMToken(device, isNotExpired, regId, userId) async {
+    String accessToken = await getFirebaseAccessToken();
     try {
       final http.Response response = await http.post(
-        Uri.parse(ApiConstants.fcmUrl),
+        Uri.parse(ApiConstants.graphqlUrl),
         headers: {
           'Content-Type': ApiConstants.contentType,
           'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
           'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
         },
         body: jsonEncode({
-          'registrationToken': storedFCMToken,
+          'query': insertNotificationDevices,
+          'variables': {
+            'device': device,  // Add your device value here
+            'isNotExpired': isNotExpired,  // Add your isExpired value here// Add your isActive value here
+            'regId': regId,  // Add your regId value here
+            'userId': userId,  // Add your userId value here
+          },
         }),
       );
 
       if (response.statusCode == 200) {
-        print('FCM Token sent: $storedFCMToken');
         print(response.body);
       } else {
         print('Failed to send FCM Token. Status code: ${response.statusCode}');
@@ -666,6 +698,67 @@ class FCMMessaging {
     } catch (error) {
       print('Error fetching service provider types: $error');
       throw error;
+    }
+  }
+
+  static Future<http.Response> logoutFunction(regId, userId, isNotExpired) async {
+    String accessToken = await getFirebaseAccessToken();
+    try {
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({
+          'query': updateNotificationDevices,
+          'variables': {
+            'isNotExpired': isNotExpired,  // Add your isExpired value here
+            'regId': regId,  // Add your regId value here
+            'userId': userId,  // Add your userId value here
+          },
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print(response.body);
+      } else {
+        print('Failed to update IS expired: ${response.statusCode}');
+      }
+
+      return response;
+    } catch (error) {
+      print('Error updating: $error');
+      throw error;
+    }
+  }
+
+ Future<List> fetchFcmToken() async {
+    String accessToken = await getFirebaseAccessToken();
+    final http.Response response = await http.post(
+      Uri.parse(ApiConstants.graphqlUrl), // Replace with your API endpoint
+      headers: {
+        'Content-Type': ApiConstants.contentType,
+        'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+        'x-hasura-admin-secret': ApiConstants.adminSecret,
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode(<String, dynamic>{
+        'query': notificationTokenIds,
+
+      }),
+    );
+
+    if (response.statusCode == 200) {
+      Map<String, dynamic> responseData = json.decode(response.body);
+      List<dynamic> notificationToken = responseData['data']['notification_devices'];
+      //print('notification Token data  -  $notificationToken');
+      return notificationToken;
+
+    } else {
+      throw Exception('Failed to load Notification Token');
     }
   }
 }

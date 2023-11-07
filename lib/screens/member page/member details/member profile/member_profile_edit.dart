@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:dropdown_button2/dropdown_button2.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -345,7 +346,7 @@ class _EditMemberProfileState extends State<EditMemberProfile> {
                             salutationController.text = newValue ?? '';
                           });
                         },
-                        items: <String>['Mr', 'Mrs.', 'Miss', 'Dr.', 'Prof.']
+                        items: <String>['Mr.','Mrs.', 'Ms.', 'Master.', 'Baby.', 'Dr.', 'Prof.Dr.', 'B/O.', 'D/O.',]
                             .map<DropdownMenuItem<String>>((String value) {
                           return DropdownMenuItem<String>(
                             value: value,
@@ -443,21 +444,27 @@ class _EditMemberProfileState extends State<EditMemberProfile> {
                           suffixIcon: const Icon(Icons.calendar_month),
                         ),
                       ),),
-                      buildInfoRow( 'Mobile',TextFormField(
-                        controller: mobileController, // Attach the TextEditingController
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                        ),
-                        maxLines: null, // Allow multiple lines of input
-                        decoration: InputDecoration(
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(8.0),
-                            borderSide: const BorderSide(color: Colors.grey),
+                      buildInfoRow(
+                        'Mobile',
+                        TextFormField(
+                          controller: mobileController,
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(14), // Limit to 14 characters
+                            FilteringTextInputFormatter.allow(RegExp(r'[0-9]')), // Allow only numbers
+                          ],
+                          style: TextStyle(fontSize: 14.sp),
+                          maxLines: null,
+                          keyboardType: TextInputType.phone,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8.0),
+                              borderSide: const BorderSide(color: Colors.grey),
+                            ),
                           ),
                         ),
-                      ),),
+                      ),
                       buildInfoRow( 'What\'s App',TextFormField(
                         controller: whatsAppController, // Attach the TextEditingController
                         style: TextStyle(

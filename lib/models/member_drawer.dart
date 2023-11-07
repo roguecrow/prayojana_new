@@ -29,7 +29,7 @@ class _MemberDrawerState extends State<MemberDrawer> {
     var container , title;
     if (currentPage == DrawerSections.profile) {
       title = Text('Member Profile',style: TextStyle(fontSize: 20.0.sp),);
-      container = MemberProfile(member: member); // Pass member data to MemberHealth
+      container = MemberProfile(member: member,memberId: 0,); // Pass member data to MemberHealth
     }
     else if (currentPage == DrawerSections.health) {
       title = Text('Member Health',style: TextStyle(fontSize: 20.0.sp));

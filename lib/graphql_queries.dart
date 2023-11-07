@@ -263,21 +263,47 @@ const String updateInteractionQuery =r'''
 
 
 const String updateInteractionAttachmentsQuery = r'''
-  mutation UpdateAttachment(\$interactionId: Int!, \$fileType: String!, \$url: String!) {
-            update_interaction_attachements(
-              where: { interaction_id: { _eq: \$interactionId } },
-              _set: { file_type: \$fileType, url: \$url }
-            ) {
-              affected_rows
-              returning {
-                id
-                interaction_id
-                file_type
-                url
-              }
-            }
-          }
+mutation UpdateInteractionAttachments(
+  $interactionId: Int!,
+  $fileType: String!,
+  $url: String!
+) {
+  update_interaction_attachements(
+    where: { interaction_id: { _eq: $interactionId } },
+    _set: { file_type: $fileType, url: $url }
+  ) {
+    affected_rows
+    returning {
+      id
+      interaction_id
+      file_type
+      url
+    }
+  }
+}
 ''';
+
+const String updateTaskAttachmentsQuery = r'''
+  mutation UpdateTaskAttachments(
+    $taskId: Int!,
+    $fileType: String!,
+    $url: String!
+  ) {
+    update_task_attachements(
+      where: { task_id: { _eq: $taskId } },
+      _set: { file_type: $fileType, url: $url }
+    ) {
+      affected_rows
+      returning {
+        id
+        task_id
+        file_type
+        url
+      }
+    }
+  }
+''';
+
 
 
 
@@ -311,6 +337,26 @@ query MyQuery {
   }
 }
 
+''';
+
+const String getMemberStatusTypesQuery = '''
+query MyQuery {
+  member_status_types {
+    id
+    color
+    name
+  }
+}
+''';
+
+const String getPlansQuery = '''
+query MyQuery {
+  plans {
+    name
+    color
+    id
+  }
+}
 ''';
 
 const String getServiceProviderTypesQuery = '''
@@ -456,6 +502,76 @@ const String insertInChatSummaries = '''
         }
       }
     ''';
+
+const String insertNotificationDevices = '''
+  mutation MyMutation(\$device: String!, \$isNotExpired: Boolean!, \$regId: String!, \$userId: Int!) {
+    insert_notification_devices(objects: {
+      device: \$device,
+      is_not_expired: \$isNotExpired,
+      reg_id: \$regId,
+      user_id: \$userId
+    }) {
+      affected_rows
+      returning {
+        device
+        id
+        is_active
+        is_not_expired
+        reg_id
+        user_id
+      }
+    }
+  }
+''';
+
+const String updateNotificationDevices = '''
+mutation MyMutation(\$regId: String!, \$isNotExpired: Boolean!, \$userId: Int!) {
+  update_notification_devices(
+    where: { reg_id: { _eq: \$regId }, user_id: { _eq: \$userId } },
+    _set: { is_not_expired: \$isNotExpired }
+  ) {
+    affected_rows
+    returning {
+      device
+      expired_at
+      id
+      is_active
+      is_not_expired
+      reg_id
+      user_id
+    }
+  }
+}
+
+''';
+
+const String updatePeopleMutation = '''
+mutation MyMutation(\$userId: Int!, \$dob: String!, \$city: String!, \$country: String!, \$email: String!, \$whatsapp: String!) {
+  update_people(
+    where: {user_id: {_eq: \$userId}},
+    _set: {
+      dob: \$dob,
+      city: \$city,
+      country: \$country,
+      email: \$email,
+      whatsapp: \$whatsapp
+    }
+  ) {
+    affected_rows
+    returning {
+      city
+      country
+      dob
+      email
+      phone
+      state
+      user_id
+    }
+  }
+}
+''';
+
+
 
 const String insertTaskChatSummaries = '''
       mutation MyMutation(\$memberId: Int!, \$notes: String!, \$taskId: Int!) {
@@ -920,6 +1036,17 @@ query MyQuery {
 }
 ''';
 
+const String notificationTokenIds = r'''
+query MyQuery {
+  notification_devices {
+    id
+    reg_id
+    user_id
+  }
+}
+
+''';
+
 const String updateMemberMedicalCenterDetails = r'''
 mutation MyMutation($id: Int!, $member_id: Int!, $medical_center_id: Int!) {
   update_member_medical_center(
@@ -1002,6 +1129,49 @@ mutation MyMutation($id: Int!, $member_id: Int!, $doctor_address_id: Int!, $doct
   }
 }
 
+''';
+
+const String insertNewTask = r'''
+mutation MyMutation($carebuddy_id: Int!, $task_title: String!, $task_notes: String!, $service_provider_id: Int!, $task_status_type_id: Int!, $created_by: Int!, $file_type: String!, $url: String!, $due_date: date!, $due_time: time!, $member_id: Int!) {
+  insert_task_members(objects: {task: {data: {carebuddy_id: $carebuddy_id, task_title: $task_title, task_notes: $task_notes, service_provider_id: $service_provider_id, task_status_type_id: $task_status_type_id, created_by: $created_by, task_attachements: {data: {file_type: $file_type, url: $url}}, due_date: $due_date, due_time: $due_time}}, member_id: $member_id}) {
+    affected_rows
+    returning {
+      task {
+        carebuddy_id
+        task_title
+        interaction_id
+        service_provider_id
+        task_status_type_id
+        created_by
+        user {
+          name
+        }
+        task_attachements {
+          file_type
+          url
+          task_id
+        }
+        id
+        due_date
+        due_time
+        task_status_type {
+          name
+        }
+        service_provider {
+          name
+          service_provider_type_id
+          service_provider_type {
+            name
+          }
+        }
+      }
+      member_id
+      member {
+        name
+      }
+    }
+  }
+}
 ''';
 
 
@@ -1102,5 +1272,28 @@ String interactionDetailsQuery(int interactionId) {
   }
 ''';
 }
+
+String getUserProfile(int userId) {
+  return '''
+query MyQuery(\$userId: Int!) {
+  users(where: {id: {_eq: \$userId}}) {
+    id
+    name
+    mobile_number
+    people {
+      city
+      country
+      dob
+      email
+      profile_photo
+      state
+      whatsapp
+      gender
+    }
+  }
+}
+''';
+}
+
 
 

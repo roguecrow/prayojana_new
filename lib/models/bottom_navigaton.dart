@@ -6,6 +6,8 @@ import 'package:prayojana_new/screens/interactions%20page/interaction_screen.dar
 import 'package:prayojana_new/screens/member%20page/member_screen.dart';
 import 'package:prayojana_new/screens/tasks%20page/task_screen.dart';
 
+import '../services/firebase_api.dart';
+
 class BottomNavigator extends StatefulWidget {
   const BottomNavigator({Key? key}) : super(key: key);
 
@@ -23,6 +25,18 @@ class _BottomNavigatorState extends State<BottomNavigator> {
     const TaskScreen(),
     const CalendarScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    print('initiated notification');
+   // initiateNotification();
+  }
+
+  void initiateNotification() async {
+    print('from bottom nav');
+    FirebaseApi().initPushNotification();
+  }
 
 
   @override

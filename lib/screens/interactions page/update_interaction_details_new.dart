@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_indicator/loading_indicator.dart';
@@ -27,6 +28,7 @@ class InteractionDetailsScreenNew extends StatefulWidget {
 
 class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNew> {
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  final TextEditingController fileNameController = TextEditingController(); // Add this line
   List<Map<String, dynamic>> interactionTypes = [];
   List<Map<String, dynamic>> interactionStatusTypes = [];
   int? selectedInteractionTypeId;
@@ -40,6 +42,16 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
   List<File> fileToDisplay = [];
   List<String> interactionSummaries = [];
   Map<String, dynamic> selectedInteractionMember = {}; // Add this line
+  bool isFormChanged = false;
+  bool _isMounted = true;
+  File? pickedFile; // Store the picked file
+  String? pickedFileName; // Store the file name
+  String? attachmentUrl;
+  String? errorAttachment;
+  String? fileType;
+  var fileUrl;
+
+
 
 
   // final TextEditingController _locationController = TextEditingController();
@@ -67,6 +79,9 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
       _interactionController.text = selectedInteractionMember['interaction']['title'];
       _notesController.text = selectedInteractionMember['interaction']['notes'];
       selectedInteractionStatusTypeId = selectedInteractionMember['interaction']['interaction_status_type_id'];
+      selectedInteractionTypeId = selectedInteractionMember['interaction']['interaction_type_id'];
+      //fileUrl = selectedInteractionMember['interaction']['interaction_attachements']['url'];
+      //print('fileUrl - $fileUrl');
 
       print('selectedInteractionMember - $selectedInteractionMember');
       _fetchMemberName();
@@ -131,6 +146,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
         setState(() {
           interactionStatusTypes = List<Map<String, dynamic>>.from(data['data']['interaction_status_types']);
         });
+        print(interactionStatusTypes);
       } else {
         print('API Error: ${response.reasonPhrase}');
       }
@@ -139,34 +155,10 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
     }
   }
 
-  Future<void> pickFile() async {
-    try {
-      setState(() {
-        isLoading = true;
-      });
-
-      FilePickerResult? pickedFiles = await FilePicker.platform.pickFiles(
-        type: FileType.any,
-        //allowMultiple: true, // Allow multiple files to be picked
-        //allowedExtensions: ['png', 'pdf', 'jpeg', 'jpg'],
-      );
-
-      if (pickedFiles != null) {
-        pickedFiles.files.forEach((pickedFile) {
-          _fileNames.add(pickedFile.name);
-          fileToDisplay.add(File(pickedFile.path.toString()));
-        });
-      }
-    } catch (e) {
-      print(e);
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
 
   Future<void> _updateAttachment(String fileType, String url) async {
+    print('fileType - $fileType');
+    print('url - $url');
     try {
       String accessToken = await getFirebaseAccessToken();
 
@@ -200,16 +192,6 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
   }
 
 
-  Future<void> pickImageFromCamera() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
-
-    if (pickedFile != null) {
-      setState(() {
-        fileToDisplay.add(File(pickedFile.path));
-      });
-    }
-  }
 
 
 
@@ -225,30 +207,70 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (fileToDisplay.isNotEmpty) // Display the selected image if available
+                    if (pickedFile != null && pickedFile!.path.endsWith('.jpg')) // Check if the picked file is an image
                       Column(
                         children: [
-                          Image.file(
-                            fileToDisplay.first, // Display the first selected image
-                            width: 300.w, // Adjust the width as needed
-                            height: 300.h, // Adjust the height as needed
+                          pickedFile != null
+                              ? Image.file(
+                            pickedFile!,
+                            width: 300.w,
+                            height: 300.h,
+                          )
+                              : fileUrl != null
+                              ? Image.network(
+                            fileUrl,
+                            width: 300.w,
+                            height: 300.h,
+                          )
+                              : SizedBox.shrink(),
+                          SizedBox(height: 10.h),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  pickedFileName ?? '',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    pickedFile = null;
+                                    pickedFileName = null;
+                                    fileNameController.clear();
+                                  });
+                                },
+                                icon: const Icon(Icons.delete),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    if (pickedFile != null && !pickedFile!.path.endsWith('.jpg')) // Check if the picked file is not an image
+                      Column(
+                        children: [
+                          Text(
+                            pickedFileName ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           SizedBox(height: 10.h),
                           Row(
                             children: [
-                              if (_fileNames.isNotEmpty) // Add this condition
-                                Expanded(
-                                  child: Text(
-                                    _fileNames.first,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                              Expanded(
+                                child: Text(
+                                  'File type: ${pickedFile?.path.split('.').last}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
+                              ),
                               IconButton(
                                 onPressed: () {
                                   setState(() {
-                                    fileToDisplay.clear();
-                                    _fileNames.clear();
+                                    pickedFile = null;
+                                    pickedFileName = null;
+                                    fileNameController.clear();
                                   });
                                 },
                                 icon: const Icon(Icons.delete),
@@ -272,33 +294,35 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                     ),
                     TextButton(
                       onPressed: () async {
+                        pickedFile = await pickImageFromCamera();
+                        pickedFileName = pickedFile?.path.split('/').last;
+                        String? trimmedText = pickedFileName!.length <= 20
+                            ? pickedFileName
+                            : pickedFileName?.substring(0, 20);
+                        String? fileType = pickedFile?.path.split('.').last;
+
+                        setState(() {
+                          fileNameController.text = '$trimmedText.$fileType';
+                        });
                         Navigator.of(context).pop(); // Close the dialog
-                        await pickImageFromCamera();
-                        // After pickImageFromCamera is complete
-                        if (fileToDisplay.isNotEmpty) {
-                          final fileType = _fileNames.first.split('.').last;
-                          const url = 'http://qwerty.com'; // Replace with the actual URL
-                          await _updateAttachment(
-                            fileType,
-                            url,
-                          );
-                        }
                       },
                       child: const Text('Camera'),
                     ),
                     TextButton(
                       onPressed: () async {
-                        Navigator.of(context).pop(); // Close the dialog
-                        await pickFile();
-                        // After pickFile is complete
-                        if (fileToDisplay.isNotEmpty) {
-                          final fileType = _fileNames.first.split('.').last;
-                          const url = 'http://qwerty.com'; // Replace with the actual URL
-                          _updateAttachment(
-                            fileType,
-                            url,
-                          );
+                        pickedFile = await pickFile();
+                        pickedFileName = pickedFile?.path.split('/').last;
+                        fileType = pickedFile?.path.split('.').last;
+                        String? trimmedText = pickedFileName!.length <= 20
+                            ? pickedFileName
+                            : pickedFileName?.substring(0, 20);
+
+                        if (_isMounted) {
+                          setState(() {
+                            fileNameController.text = '$trimmedText.$fileType';
+                          });
                         }
+                        Navigator.of(context).pop(); // Close the dialog
                       },
                       child: const Text('Add'),
                     ),
@@ -310,6 +334,44 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
         );
       },
     );
+  }
+
+
+  Future<File?> pickImageFromCamera() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      return File(pickedFile.path);
+    }
+
+    return null;
+  }
+
+  Future<File?> pickFile() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      FilePickerResult? pickedFiles = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        //allowMultiple: true, // Allow multiple files to be picked
+        //allowedExtensions: ['png', 'pdf', 'jpeg', 'jpg'],
+      );
+
+      if (pickedFiles != null && pickedFiles.files.isNotEmpty) {
+        return File(pickedFiles.files.first.path ?? '');
+      }
+    } catch (e) {
+      print(e);
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+
+    return null;
   }
 
 
@@ -378,12 +440,18 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
 
 
   Future<void> _selectDate(BuildContext context) async {
+    DateTime initialDate = DateTime.now();
+    if (_dueDateController.text.isNotEmpty) {
+      initialDate = DateFormat('dd MMM yyyy').parse(_dueDateController.text);
+    }
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
+      initialDate: initialDate,
+      firstDate: initialDate,
       lastDate: DateTime(2101),
     );
+
     if (picked != null && picked != _dueDateController) {
       setState(() {
         _dueDateController.text = DateFormat('dd MMM yyyy').format(picked);
@@ -435,7 +503,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
   Future<void> _updateInteraction() async {
     String accessToken = await getFirebaseAccessToken();
 
-    if (selectedInteractionStatusTypeId == null) {
+    if (selectedInteractionStatusTypeId == null || selectedInteractionTypeId == null || _dueDateController.text.isEmpty || _interactionController.text.isEmpty || _interactionController.text == '') {
       // Display an error message
       // ignore: use_build_context_synchronously
       showDialog(
@@ -443,7 +511,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
         builder: (BuildContext context) {
           return AlertDialog(
             title: const Text('Error'),
-            content: const Text('Please select an Interaction status type before updating.'),
+            content: const Text('Please ensure all the field are filled .'),
             actions: [
               TextButton(
                 onPressed: () {
@@ -494,16 +562,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
   String? selectedInteractionType;
   String? selectedInteractionStatusType;
 
-  void _openChatPage() {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SummariesChatPage(
-          selectedInteractionMember: selectedInteractionMember,
-          selectedTaskMember: {}, // Pass an empty map as selectedTaskMember
-        ),
-      ),
-    );
-  }
+
 
   void _handleSubmitted(String message) async {
     setState(() {
@@ -551,6 +610,41 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
   }
 
 
+  Future<void> uploadFile(String pickedFileName , String filePath) async {
+    print(pickedFileName);
+    print(filePath);
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/50?image'),
+      );
+      request.files.add(await http.MultipartFile.fromPath(
+          'image', filePath,
+          contentType: MediaType('image', 'jpg')
+      ));
+      request.headers.addAll({
+        'Content-Type': ApiConstants.contentType,
+        'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+        'x-hasura-admin-secret': ApiConstants.adminSecret,
+        'Authorization': 'Bearer $accessToken',
+      });
+
+      var response = await http.Response.fromStream(await request.send());
+
+      if (response.statusCode == 200) {
+        String responseBody = response.body;
+        Map<String, dynamic> responseData = json.decode(responseBody);
+        String attachmentUrl = responseData['data']['image'];
+        print(await response.body);
+        _updateAttachment(fileType!, attachmentUrl);
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+      }
+    } catch (error) {
+      print('Error uploading file: $error');
+    }
+  }
 
 
   @override
@@ -593,10 +687,11 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                     padding: EdgeInsets.only(right: 20.0.w, top: 20.0.h),
                     child: ElevatedButton(
                       onPressed: () {
-                        _updateInteraction();
+                        isFormChanged ? _updateInteraction() : null;
                       },
                       style: ElevatedButton.styleFrom(
                         padding: EdgeInsets.symmetric(vertical: 10.h, horizontal: 22.w),
+                        backgroundColor: isFormChanged ? Colors.blue : Colors.grey, // Change colors as needed
                       ),
                       child: Text(
                         'Update',
@@ -649,6 +744,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                   buildInfoColumn('Date', InkWell(
                     onTap: () {
                       _selectDate(context); // Function to open date picker
+                      isFormChanged = true;
                     },
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -667,11 +763,16 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
 
                   buildInfoColumn( '',TextFormField(
                     controller: _interactionController, // Attach the TextEditingController
+                    onChanged: (text) {
+                      setState(() {
+                        isFormChanged = true;
+                      });
+                    },
                     maxLengthEnforcement: MaxLengthEnforcement.enforced, // Enforce the maximum length
                     style: TextStyle(
                       fontSize: 14.sp,
                     ),
-                    maxLength: 30, // Set the maximum length to 30 characters
+                    maxLength: 35, // Set the maximum length to 30 characters
                     decoration: const InputDecoration(
                       label: Text('Edit Title'),
                     ),
@@ -696,6 +797,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
 
                     onChanged: (newValue) {
                       setState(() {
+                        isFormChanged = true;
                         _dropdownFocusNode.unfocus();
                         selectedInteractionTypeId = newValue;
                         selectedInteractionType = interactionTypes.firstWhere((statusType) => statusType['id'] == newValue)['name'];
@@ -747,6 +849,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                     iconStyleData: const IconStyleData(icon: Icon(Icons.keyboard_arrow_down),),
                     onChanged: (newValue) {
                       setState(() {
+                        isFormChanged = true;
                         _dropdownFocusNode.unfocus();
                         selectedInteractionStatusTypeId = newValue;
                         selectedInteractionStatusType = interactionStatusTypes.firstWhere((statusType) => statusType['id'] == newValue)['name'];
@@ -770,6 +873,11 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                   ),'assets/icons/Lightning bolt.png'),
                   buildInfoColumn( '',TextFormField(
                     controller: _notesController, // Attach the TextEditingController
+                    onChanged: (text) {
+                      setState(() {
+                        isFormChanged = true;
+                      });
+                    },
                     style: TextStyle(
                       fontSize: 14.sp,
                     ),
@@ -780,22 +888,40 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                     ),
                   ),'assets/icons/Document add.png'),
                   buildInfoColumn('', Stack(
+                    alignment: Alignment.centerRight,
                     children: [
                       TextFormField(
+                        controller: fileNameController,
                         readOnly: true,
                         onTap: () async {
                           _showAttachmentDialog(context);
+                          isFormChanged = true;
+
                         },
                         style: TextStyle(
                           fontSize: 14.sp,
                         ),
-                        decoration: const InputDecoration(
-                          label: Text('Attachment'),
-                          suffixIcon: Icon(Icons.add),
+                        decoration:  InputDecoration(
+                          label: const Text('Attachments'),
+                          labelStyle: TextStyle(fontWeight:FontWeight.w500,fontSize: 16.sp,),
+                          hintText: 'Photos, documents etc..',
+                          suffixIcon: IconButton(
+                            icon:const Icon(Icons.add),
+                            color: const Color(0xff999999),
+                            onPressed: () {
+                              isFormChanged = true;
+
+                              print('on pressed - $pickedFile');
+                              var filepath = pickedFile!.path;
+                              // print('pickedFile path - $filepath');
+                              uploadFile(pickedFileName! , pickedFile!.path);
+                            },
+                          ),
+                          //suffixIcon: const Icon(Icons.add),
                         ),
                       ),
                     ],
-                  ),'assets/icons/Paper clip.png'),
+                  ),'assets/icons/Paper clip.png',),
 
                   Padding(
                     padding: EdgeInsets.only(top: 30.0.h,bottom: 25.h),
@@ -845,8 +971,10 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                               icon:const Icon(Icons.add),
                               color: const Color(0xff999999),
                               onPressed: () {
-                                _handleSubmitted(_interactionSummaryController.text);
-                                _interactionSummaryController.clear();
+                                if(_interactionSummaryController.text.isNotEmpty){
+                                  _handleSubmitted(_interactionSummaryController.text);
+                                  _interactionSummaryController.clear();
+                                }
                               },
                             ),
                           ),

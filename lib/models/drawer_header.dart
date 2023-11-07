@@ -10,28 +10,46 @@ class HeaderDrawer extends StatefulWidget {
 }
 
 class _HeaderDrawerState extends State<HeaderDrawer> {
+  String? memberName;
+  String? phone;
+  String? firstName;
 
   void initState() {
     super.initState();
+    loadMemberDetails();
+  }
+
+  void loadMemberDetails() async {
     print('Clicked Member ID: ${widget.member['id']}');
 
     widget.member.forEach((key, value) {
       print('$key: $value');
     });
+    memberName = widget.member['name'] != null && widget.member['name'] != ''
+        ? widget.member['name']
+        : 'N/A';
+    List<String> nameParts = memberName!.split(' ');
+    if (nameParts.isNotEmpty) {
+      firstName = nameParts[0];
+      print(firstName);
+    }
+    phone = widget.member['phone'] != null && widget.member['phone'] != ''
+        ? widget.member['phone']
+        : 'N/A';
   }
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Color(0xff006bbf),
+      color: const Color(0xff006bbf),
       width: double.infinity,
       height: 200,
-      padding: EdgeInsets.only(top: 20.0),
+      padding: const EdgeInsets.only(top: 20.0),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            margin: EdgeInsets.only(bottom: 10),
+            margin: const EdgeInsets.only(bottom: 10),
             height: 70,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
@@ -46,16 +64,13 @@ class _HeaderDrawerState extends State<HeaderDrawer> {
                 : null,
           ),
           Text(
-            widget.member['name'] != null && widget.member['name'] != ''
-                ? widget.member['name']
-                : 'N/A',
+            memberName!.length > 15 ? firstName! : memberName!,
             style: TextStyle(color: Colors.white, fontSize: 25.sp),
           ),
-          SizedBox(height: 4),
+
+          const SizedBox(height: 4),
           Text(
-            widget.member['phone'] != null && widget.member['phone'] != ''
-                ? widget.member['phone']
-                : 'N/A',
+            phone!,
             style: TextStyle(
               color: Colors.grey[200],
               fontSize: 12.sp,

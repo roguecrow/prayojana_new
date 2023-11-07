@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:convert';
 
 import 'package:firebase_auth/firebase_auth.dart';
@@ -11,6 +13,8 @@ import 'package:prayojana_new/models/drawer_items.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../services/api_service.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+
+import '../../services/firebase_api.dart';
 
 
 class RegisterScreen extends StatefulWidget {
@@ -33,6 +37,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   int screenState = 0;
   bool isOtpButtonDisabled = false;
+
 
   // blue = const Color(0xffd1d5db);
 
@@ -73,16 +78,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   Future<void> verifyPhone(String number) async {
     print('number : $number');
+    print('in verifyPhone - $screenState');
     setState(() {
       isOtpButtonDisabled = true;
-
     });
 
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: number,
-      timeout: const Duration(seconds: 60),
+      timeout: const Duration(seconds: 1),
       verificationCompleted: (PhoneAuthCredential credential) {
-        showSnackBarText("Auth Completed!");
+        //showSnackBarText("Auth Completed!");
       },
       verificationFailed: (FirebaseAuthException e) {
         showDialog(
@@ -104,16 +109,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       },
       codeSent: (String verificationId, int? resendToken) {
-        showSnackBarText("OTP Sent!");
+        showCustomTopSnackbar(context, 'OTP Sent!');
         verID = verificationId;
         setState(() {
           screenState = 1;
         });
       },
-      codeAutoRetrievalTimeout: (String verificationId) {
-        showSnackBarText("Timeout!");
-      },
+      codeAutoRetrievalTimeout: (String verificationId) {},
     ).whenComplete(() {
+      print('verifyPhoneNumber called');
       print('otp sent');
       if (mounted) {
         setState(() {
@@ -123,26 +127,71 @@ class _RegisterScreenState extends State<RegisterScreen> {
     });
   }
 
+  void showCustomTopSnackbar(BuildContext context, String message) {
+    final overlay = Overlay.of(context);
+    OverlayEntry overlayEntry;
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 16.0.h, // Adjust the top padding as needed
+        left: 16.0.w,
+        right: 16.0.w,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.0.w, vertical: 6.0.h),
+            decoration: BoxDecoration(
+              color: message == 'Invalid OTP. Please try again.' ?  Colors.red : Colors.black45 ,
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: Center(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16.0.sp,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+
+    Future.delayed(const Duration(seconds: 3), () {
+      overlayEntry.remove();
+    });
+  }
+
+
   Future<void> verifyOTP() async {
+    print(screenState);
     setState(() {
       isVerifyingOTP = true;
     });
 
-    await FirebaseAuth.instance.signInWithCredential(
-      PhoneAuthProvider.credential(
-        verificationId: verID,
-        smsCode: otpPin,
-      ),
-    ).then((authResult) async {
+    try {
+      final authResult = await FirebaseAuth.instance.signInWithCredential(
+        PhoneAuthProvider.credential(
+          verificationId: verID,
+          smsCode: otpPin,
+        ),
+      );
+
       await AccessToken().getFirebaseAccessToken(authResult.user);
       final apiService = ApiService();
       var response = await apiService.postBearerToken();
-        print('checkUser response body - ${response.body}');
+      print('checkUser response body - ${response.body}');
+
       if (response.statusCode == 200) {
         // Store response body and user_id in local storage
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('loginUserDetails', response.body);
         await prefs.setInt('userId', json.decode(response.body)['user_id']);
+        //initiates fire firebase messaging api
+        await FirebaseApi().initNotification();
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
             builder: (context) => const BottomNavigator(),
@@ -150,15 +199,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
         );
       } else {
         print(response.body);
-        showSnackBarText("User does not exist.");
+        //showSnackBarText("User does not exist.");
+        showCustomTopSnackbar(context, "User does not exist.");
       }
-    }).whenComplete(() {
+    } catch (e) {
+      if (e is FirebaseAuthException && e.code == 'invalid-verification-code') {
+        showCustomTopSnackbar(context, "Invalid OTP. Please try again.");
+      } else {
+        print('Error: $e');
+        //showSnackBarText("An error occurred. Please try again later.");
+        showCustomTopSnackbar(context, "An error occurred. Please try again later.");
+      }
+    } finally {
       if (mounted) {
         setState(() {
           isVerifyingOTP = false;
         });
       }
-    });
+    }
   }
 
 
@@ -168,13 +226,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final apiService = ApiService();
       var response = await apiService.postUserData(countryDial + phoneController.text);
       if (response.statusCode == 200) {
-        showSnackBarText("API call success, now verify phone number!");
+        //showSnackBarText("API call success, now verify phone number!");
         verifyPhone(countryDial + phoneController.text);
       } else {
-        showSnackBarText("API call failed, try again later.");
+        //showSnackBarText("Mobile number not registered");
+        showCustomTopSnackbar(context, 'Mobile number not registered');
       }
     } catch (e) {
-      showSnackBarText("Error occurred, try again later.");
+      //showSnackBarText("Error occurred, try again later.");
+      showCustomTopSnackbar(context, "Error occurred, try again later.");
+
     } finally {
       if (mounted) {
         setState(() {
@@ -256,10 +317,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               : () {
                             if (screenState == 0) {
                               if (phoneController.text.isEmpty) {
-                                showSnackBarText("Phone number is still empty!");
+                                //showSnackBarText("Phone number is still empty!");
+                                showCustomTopSnackbar(context, "Phone number is still empty!");
                               } else {
                                 if (countryDial == "+1") {
-                                  showSnackBarText("Please select a country code.");
+                                 // showSnackBarText("Please select a country code.");
+                                  showCustomTopSnackbar(context, "Please select a country code.");
+
                                   return;
                                 } else {
                                   registerUserAndVerifyPhone();
@@ -269,7 +333,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               if (otpPin.length >= 6) {
                                 verifyOTP();
                               } else {
-                                showSnackBarText("Enter OTP correctly!");
+                                //showSnackBarText("Enter OTP correctly!");
+                                showCustomTopSnackbar(context, "Enter OTP correctly!");
                               }
                             }
                           },
@@ -279,10 +344,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 : () {
                               if (screenState == 0) {
                                 if (phoneController.text.isEmpty) {
-                                  showSnackBarText("Phone number is still empty!");
+                                  //showSnackBarText("Phone number is still empty!");
+                                  showCustomTopSnackbar(context, "Phone number is still empty!");
                                 } else {
                                   if (countryDial == "+1") {
-                                    showSnackBarText("Please select a country code.");
+                                    //showSnackBarText("Please select a country code.");
+                                    showCustomTopSnackbar(context, "Please select a country code.");
+
                                     return;
                                   } else {
                                     registerUserAndVerifyPhone();
@@ -290,9 +358,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 }
                               } else {
                                 if (otpPin.length >= 6) {
+                                  print('verifyOTP called');
+                                  print('otpPin length: ${otpPin.length}');
                                   verifyOTP();
                                 } else {
-                                  showSnackBarText("Enter OTP correctly!");
+                                 // showSnackBarText("Enter OTP correctly!");
+                                  showCustomTopSnackbar(context, "Enter OTP correctly!");
                                 }
                               }
                             },
@@ -324,31 +395,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         SizedBox(height: 20.h,),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              "Are you a new customer? ",
-                              style: GoogleFonts.inter(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {
-                                // Navigator.push(context, MaterialPageRoute(builder: (context) => SignUpScreen()));
-                              },
-                              child: Text(
-                                "Sign Up",
-                                style: GoogleFonts.inter(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w500,
-                                  color: const Color(0xff008fff),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
+                        // Row(
+                        //   mainAxisAlignment: MainAxisAlignment.center,
+                        //   children: [
+                        //     Text(
+                        //       "Are you a new customer? ",
+                        //       style: GoogleFonts.inter(
+                        //         fontSize: 16.sp,
+                        //         fontWeight: FontWeight.w500,
+                        //       ),
+                        //     ),
+                        //     GestureDetector(
+                        //       onTap: () {
+                        //         // Navigator.push(context, MaterialPageRoute(builder: (context) => SignUpScreen()));
+                        //       },
+                        //       child: Text(
+                        //         "Sign Up",
+                        //         style: GoogleFonts.inter(
+                        //           fontSize: 16.sp,
+                        //           fontWeight: FontWeight.w500,
+                        //           color: const Color(0xff008fff),
+                        //         ),
+                        //       ),
+                        //     ),
+                        //   ],
+                        // ),
                       ],
                     ),
                   ),

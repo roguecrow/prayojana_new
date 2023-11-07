@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import 'package:loading_indicator/loading_indicator.dart';
+import 'package:prayojana_new/screens/notification%20page/push_notification_screen.dart';
 import 'package:prayojana_new/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../floor/database.dart';
 import '../../models/drawer_items.dart';
 import 'dashboard_metrics.dart';
 class DashboardScreen extends StatefulWidget {
@@ -24,14 +26,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? name;
   List<Map<String, dynamic>> tasks = [];
   List<Map<String, dynamic>> interactions = [];
+  int _currentPage = 0; // Add this line
+  int? _counter;
+  final PageController _pageController = PageController(initialPage: 0);
+
+
 
   @override
   void initState() {
     super.initState();
+    incrementCounter();
     loadUserDetails();
-     dashBoardDate = DateFormat('dd MMM').format(today);
+    dashBoardDate = DateFormat('dd MMM').format(today);
     fetchCalendarDetails(); // Call the method to fetch details
     fetchDashboardDetails();
+  }
+
+  Future<void> incrementCounter() async {
+    final database = await $FloorAppDatabase.databaseBuilder('app_database.db').build();
+    final unviewedNotifications = await database.notificationDao.findUnviewedNotifications();
+    final unviewedNotificationCount = unviewedNotifications.length;
+    print('Unviewed Notification Count: $unviewedNotificationCount');
+    setState(() {
+      _counter = unviewedNotificationCount;
+    });
   }
 
 
@@ -87,6 +105,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Widget buildDot(int index) {
+    return Container(
+      width: 8.0,
+      height: 8.0,
+      margin: const EdgeInsets.symmetric(horizontal: 4.0),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: _currentPage == index ? Colors.blue : Colors.grey,
+      ),
+    );
+  }
+  void onPageChanged(int page) {
+    setState(() {
+      _currentPage = page;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     if (dashboardDetail == null || dashboardDetail!.isEmpty  || calendarDetail == null || calendarDetail!.isEmpty) {
@@ -97,12 +132,50 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: const Color(0xff006bbf),
         title: const Text('Prayojana'),
         actions: [
-          IconButton(
-              onPressed: () {},
-              icon: const Icon(
-                Icons.notifications,
-                color: Colors.white,
+          Stack(
+            children: [
+              Padding(
+                padding:  EdgeInsets.only(right: 4.0.w),
+                child: IconButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => const PushNotificationScreen(),
+                      ),
+                    );
+                  },
+                  icon:  Icon(
+                    Icons.notifications,
+                    color: Colors.white,
+                    size: 25.w,
+                  ),
+                ),
               ),
+              Container(
+                width: 35.w,
+                height: 30.h,
+                alignment: Alignment.topRight,
+                margin:  EdgeInsets.only(top: 5.h),
+                child: Container(
+                  width: 15.w,
+                  height: 10.h,
+                  decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Color(0xffc32c37),
+                     // border: Border.all(color: Colors.white, width: 1.w)
+                  ),
+                  child:  Padding(
+                    padding: const EdgeInsets.all(0.0),
+                    child: Center(
+                      child: Text(
+                        _counter.toString(),
+                        style: TextStyle(fontSize: 8.sp),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
         shape: RoundedRectangleBorder(
@@ -112,7 +185,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
       ),
-      drawer: AppDrawer(),
+        drawer: AppDrawer(),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -131,8 +204,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: SizedBox(
               height: 100.h,
               child: PageView(
+                controller: _pageController,
                 physics: const BouncingScrollPhysics(),
                 scrollDirection: Axis.horizontal,
+                onPageChanged: onPageChanged, // Add this line
                 children: [
                   StatusContainerDashboard(
                     title: "Task Status this Week",
@@ -151,10 +226,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             ),
           ),
+          Padding(
+            padding:  EdgeInsets.only(top: 10.0.h),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                3, // Replace with the actual number of pages
+                    (index) => buildDot(index),
+              ),
+            ),
+          ),
           Expanded(
             flex: 1,
             child: Padding(
-              padding: EdgeInsets.only(top: 30.0.h , left: 20.0.w ,right: 20.0.w),
+              padding: EdgeInsets.only(top: 20.0.h , left: 20.0.w ,right: 20.0.w),
               child: Stack(
                 children: [
                   SingleChildScrollView(

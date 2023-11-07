@@ -4,6 +4,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -36,6 +37,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
   final TextEditingController _dueDateController = TextEditingController();
   final TextEditingController _timeController = TextEditingController();
   final TextEditingController _notesController = TextEditingController();
+  final TextEditingController fileNameController = TextEditingController(); // Add this line
   final List<Member> _selectedMembers = [];
   List<dynamic> serviceProviderTypes = [];
   Member? _selectedMember;
@@ -52,6 +54,14 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
   PlatformFile? pickedfile;
   List<String> _fileNames = [];
   List<File> fileToDisplay = [];
+  bool _isMounted = true;
+  File? pickedFile; // Store the picked file
+  String? pickedFileName; // Store the file name
+  String? attachmentUrl;
+  var fileUrl;
+  String? errorAttachment;
+  String? fileType;
+  bool isFormChanged = false;
 
   @override
   void initState() {
@@ -59,6 +69,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
     getCareBuddyId();
     _fetchAvailableMembers();
     _fetchServiceProviderTypes();
+    print(widget.memberId);
   }
 
   Future<void> getCareBuddyId() async {
@@ -70,26 +81,43 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
 
 
   Future<void> _fetchAvailableMembers() async {
+    print('memberId - ${widget.memberId}');
     List<Member> availableMembers;
     List<dynamic>? memberData = await MemberApi().getMemberNames();
     if (memberData != null) {
       List<Member> allMembers = memberData.map((member) {
         return Member(id: member['id'], name: member['name']);
       }).toList();
-        availableMembers = allMembers;
+      availableMembers = allMembers;
       print(allMembers);
     } else {
-        availableMembers = [];
+      availableMembers = [];
       print('List Empty');
+    }
+
+    if (widget.memberId != null) {
+      // If widget.memberId is not null, try to find the member with that ID
+      Member? selectedMember = availableMembers.firstWhere(
+            (member) => member.id == widget.memberId,
+      );
+
+      if (selectedMember != null) {
+        // If a member is found with the provided ID, set it as the selected member
+        setState(() {
+          _selectedMember = selectedMember;
+        });
+      }
     }
 
     setState(() {
       _availableMembers = availableMembers;
     });
+
     for (Member member in _availableMembers) {
       print('Available Member: ${member.name}');
     }
   }
+
 
 
   void _handleMemberSelection(Member selectedMember) {
@@ -112,7 +140,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: _selectedDate ?? DateTime.now(),
-      firstDate: DateTime(2000),
+      firstDate: DateTime.now(),
       lastDate: DateTime(2101),
     );
     if (picked != null && picked != _selectedDate) {
@@ -160,6 +188,30 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
 
   Future<void> _insertTask() async {
     print('carebuddy - $careBuddyId');
+
+    if (_taskTitleController.text.isEmpty ||
+        serviceProviderId == null || _dueDateController.text.isEmpty ||
+        _timeController.text.isEmpty || _selectedMember == null) {
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Missing Information'),
+            content: const Text('Please fill in all the required fields.'),
+            actions: <Widget>[
+              TextButton(
+                child: const Text('OK'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          );
+        },
+      );
+      return; // Return early if any data is missing
+    }
+
     String accessToken = await getFirebaseAccessToken();
     var headers = {
       'Content-Type': ApiConstants.contentType,
@@ -173,57 +225,22 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
       Uri.parse(ApiConstants.graphqlUrl),
     );
 
-    String graphQLMutation = '''
-  {
-    "query": "mutation MyMutation{ insert_task_members(objects: {task: { data: { carebuddy_id: $careBuddyId, task_title: \\"${_taskTitleController.text}\\", task_notes: \\"${_notesController.text}\\", service_provider_id: $serviceProviderId, task_status_type_id: 1, created_by: $careBuddyId, task_attachements: {data: {file_type: \\"pdf\\", url: \\"http://cggvbhbbn\\"}}, due_date: \\"${_dueDateController.text}\\", due_time: \\"${_timeController.text}\\" } }, member_id: ${_selectedMember!.id} })
-    { returning 
-    { 
-    task 
-    { carebuddy_id 
-    task_title
-    task_notes
-    interaction_id
-    service_provider_id
-    task_status_type_id
-    created_by
-    user{ name 
-    }
-    task_attachements 
-    { 
-    file_type
-    url
-    task_id
-    } 
-    id 
-    due_date
-    due_time
-    task_status_type
-    { name 
-    } 
-    service_provider 
-    {
-    name 
-    service_provider_type_id 
-    service_provider_type
-    { 
-    name
-    } 
-    } 
-    } 
-    member_id 
-    member 
-    {
-    name
-    }
-    }
-    }
-    }",
-    "variables": {}
-  }
-''';
-
-
-    request.body = graphQLMutation;
+    request.body = jsonEncode({
+      "query": insertNewTask,
+      "variables": {
+        "carebuddy_id": careBuddyId,
+        "task_title": _taskTitleController.text,
+        "task_notes": _notesController.text,
+        "service_provider_id": serviceProviderId,
+        "task_status_type_id" : 2,
+        "created_by": careBuddyId,
+        "file_type": fileType,
+        "url": attachmentUrl,
+        "due_date": _dueDateController.text,
+        "due_time": _timeController.text,
+        "member_id": _selectedMember!.id
+      }
+    });
     request.headers.addAll(headers);
 
     http.StreamedResponse response = await request.send();
@@ -232,7 +249,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
       String responseString = await response.stream.bytesToString();
       Map<String, dynamic> responseData = json.decode(responseString);
       print('Inserted Task Data: $responseData');
-      Navigator.pop(context, true);// Print the inserted task data
+      Navigator.pop(context, true); // Print the inserted task data
       // Perform any necessary UI updates or navigation here
     } else {
       print('API Error: ${response.reasonPhrase}');
@@ -240,45 +257,6 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
     }
   }
 
-  Future<void> pickFile() async {
-    try {
-      setState(() {
-        isLoading = true;
-      });
-
-      FilePickerResult? pickedFiles = await FilePicker.platform.pickFiles(
-        type: FileType.any,
-        //allowMultiple: true, // Allow multiple files to be picked
-        //allowedExtensions: ['png', 'pdf', 'jpeg', 'jpg'],
-      );
-
-      if (pickedFiles != null) {
-        pickedFiles.files.forEach((pickedFile) {
-          _fileNames.add(pickedFile.name);
-          fileToDisplay.add(File(pickedFile.path.toString()));
-        });
-      }
-    } catch (e) {
-      print(e);
-    } finally {
-      setState(() {
-        isLoading = false;
-      });
-    }
-  }
-
-
-
-  Future<void> pickImageFromCamera() async {
-    final picker = ImagePicker();
-    final pickedFile = await picker.pickImage(source: ImageSource.camera);
-
-    if (pickedFile != null) {
-      setState(() {
-        fileToDisplay.add(File(pickedFile.path));
-      });
-    }
-  }
 
   String formatTime(String? time) {
     if (time == null) {
@@ -291,6 +269,43 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
     final dateTime = originalFormat.parse(time);
     return newFormat.format(dateTime);
   }
+
+  Future<void> uploadFile(String pickedFileName , String filePath) async {
+    print(pickedFileName);
+    print(filePath);
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/50?image'),
+      );
+      request.files.add(await http.MultipartFile.fromPath(
+          'image', filePath,
+          contentType: MediaType('image', 'jpg')
+      ));
+      request.headers.addAll({
+        'Content-Type': ApiConstants.contentType,
+        'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+        'x-hasura-admin-secret': ApiConstants.adminSecret,
+        'Authorization': 'Bearer $accessToken',
+      });
+
+      var response = await http.Response.fromStream(await request.send());
+
+      if (response.statusCode == 200) {
+        String responseBody = response.body;
+        Map<String, dynamic> responseData = json.decode(responseBody);
+         attachmentUrl = responseData['data']['image'];
+        print(await response.body);
+       // _updateAttachment(fileType!, attachmentUrl);
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+      }
+    } catch (error) {
+      print('Error uploading file: $error');
+    }
+  }
+
 
 
 
@@ -306,30 +321,70 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    if (fileToDisplay.isNotEmpty) // Display the selected image if available
+                    if (pickedFile != null && pickedFile!.path.endsWith('.jpg')) // Check if the picked file is an image
                       Column(
                         children: [
-                          Image.file(
-                            fileToDisplay.first, // Display the first selected image
-                            width: 300.w, // Adjust the width as needed
-                            height: 300.h, // Adjust the height as needed
+                          pickedFile != null
+                              ? Image.file(
+                            pickedFile!,
+                            width: 300.w,
+                            height: 300.h,
+                          )
+                              : fileUrl != null
+                              ? Image.network(
+                            fileUrl,
+                            width: 300.w,
+                            height: 300.h,
+                          )
+                              : const SizedBox.shrink(),
+                          SizedBox(height: 10.h),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  pickedFileName ?? '',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () {
+                                  setState(() {
+                                    pickedFile = null;
+                                    pickedFileName = null;
+                                    fileNameController.clear();
+                                  });
+                                },
+                                icon: const Icon(Icons.delete),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    if (pickedFile != null && !pickedFile!.path.endsWith('.jpg')) // Check if the picked file is not an image
+                      Column(
+                        children: [
+                          Text(
+                            pickedFileName ?? '',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           SizedBox(height: 10.h),
                           Row(
                             children: [
-                              if (_fileNames.isNotEmpty) // Add this condition
-                                Expanded(
-                                  child: Text(
-                                    _fileNames.first,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
+                              Expanded(
+                                child: Text(
+                                  'File type: ${pickedFile?.path.split('.').last}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
+                              ),
                               IconButton(
                                 onPressed: () {
                                   setState(() {
-                                    fileToDisplay.clear();
-                                    _fileNames.clear();
+                                    pickedFile = null;
+                                    pickedFileName = null;
+                                    fileNameController.clear();
                                   });
                                 },
                                 icon: const Icon(Icons.delete),
@@ -353,25 +408,35 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
                     ),
                     TextButton(
                       onPressed: () async {
+                        pickedFile = await pickImageFromCamera();
+                        pickedFileName = pickedFile?.path.split('/').last;
+                        String? trimmedText = pickedFileName!.length <= 20
+                            ? pickedFileName
+                            : pickedFileName?.substring(0, 20);
+                        String? fileType = pickedFile?.path.split('.').last;
+
+                        setState(() {
+                          fileNameController.text = '$trimmedText.$fileType';
+                        });
                         Navigator.of(context).pop(); // Close the dialog
-                        await pickImageFromCamera();
-                        // After pickImageFromCamera is complete
-                        if (fileToDisplay.isNotEmpty) {
-                          final fileType = _fileNames.first.split('.').last;
-                          const url = 'http://qwerty.com'; // Replace with the actual URL
-                        }
                       },
                       child: const Text('Camera'),
                     ),
                     TextButton(
                       onPressed: () async {
-                        Navigator.of(context).pop(); // Close the dialog
-                        await pickFile();
-                        // After pickFile is complete
-                        if (fileToDisplay.isNotEmpty) {
-                          final fileType = _fileNames.first.split('.').last;
-                          const url = 'http://qwerty.com'; // Replace with the actual URL
+                        pickedFile = await pickFile();
+                        pickedFileName = pickedFile?.path.split('/').last;
+                        fileType = pickedFile?.path.split('.').last;
+                        String? trimmedText = pickedFileName!.length <= 20
+                            ? pickedFileName
+                            : pickedFileName?.substring(0, 20);
+
+                        if (_isMounted) {
+                          setState(() {
+                            fileNameController.text = '$trimmedText.$fileType';
+                          });
                         }
+                        Navigator.of(context).pop(); // Close the dialog
                       },
                       child: const Text('Add'),
                     ),
@@ -383,6 +448,44 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
         );
       },
     );
+  }
+
+
+  Future<File?> pickImageFromCamera() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.camera);
+
+    if (pickedFile != null) {
+      return File(pickedFile.path);
+    }
+
+    return null;
+  }
+
+  Future<File?> pickFile() async {
+    try {
+      setState(() {
+        isLoading = true;
+      });
+
+      FilePickerResult? pickedFiles = await FilePicker.platform.pickFiles(
+        type: FileType.any,
+        //allowMultiple: true, // Allow multiple files to be picked
+        //allowedExtensions: ['png', 'pdf', 'jpeg', 'jpg'],
+      );
+
+      if (pickedFiles != null && pickedFiles.files.isNotEmpty) {
+        return File(pickedFiles.files.first.path ?? '');
+      }
+    } catch (e) {
+      print(e);
+    } finally {
+      setState(() {
+        isLoading = false;
+      });
+    }
+
+    return null;
   }
 
 
@@ -482,11 +585,12 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
                 padding: EdgeInsets.only(left: 20.0.w ,right:20.0.w,top: 40.0.h),
                 child: TextFormField(
                   controller: _taskTitleController,
+                  maxLength: 35, // Set the maximum length to 30 characters
                   decoration: InputDecoration(
-                    hintText: 'Task Title',
+                    hintText: 'Task Title*',
                     hintStyle: TextStyle(
                         fontSize: 16.sp,
-                        fontWeight: FontWeight.w600 ,
+                        fontWeight: FontWeight.w600,
                         color: const Color(0xff999999)
                     ),
                     enabledBorder: const UnderlineInputBorder(
@@ -612,7 +716,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
                   await _selectTime(context);
                 },
                 decoration: const InputDecoration(
-                  labelText: 'Time',
+                  labelText: 'Time*',
                   enabledBorder: UnderlineInputBorder(
                     borderSide: BorderSide(color: Colors.grey),
                   ),
@@ -632,7 +736,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton2<int>(
-                    hint: const Text('Service Provider'),
+                    hint: const Text('Service Provider*'),
                     isExpanded: true,
                     value: serviceProviderId,
                     iconStyleData: const IconStyleData(icon: Icon(Icons.keyboard_arrow_down),),
@@ -676,6 +780,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
 
               buildInfoColumn( TextFormField(
                 controller: _notesController,
+                maxLength: 40, // Set the maximum length to 30 characters
                 decoration: const InputDecoration(
                   labelText: 'Add Notes',
                   enabledBorder: UnderlineInputBorder(
@@ -687,21 +792,36 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
                 ),
               ),'assets/icons/Document add.png',),
 
-              buildInfoColumn( TextFormField(
-                readOnly: true,
-                onTap: () async {
-                  _showAttachmentDialog(context);
-                },
-                decoration: const InputDecoration(
-                  labelText: 'Add an Attachment',
-                  enabledBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey),
-                  ),
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(color: Colors.grey,),
+              buildInfoColumn(
+                TextFormField(
+                  controller: fileNameController,
+                  readOnly: true,
+                  onTap: () async {
+                    _showAttachmentDialog(context);
+                  },
+                  decoration: InputDecoration(
+                    labelText: 'Add an Attachment',
+                    enabledBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    suffixIcon: IconButton(
+                      icon:const Icon(Icons.add),
+                      color: const Color(0xff999999),
+                      onPressed: () {
+
+                        print('on pressed - $pickedFile');
+                        var filepath = pickedFile!.path;
+                        // print('pickedFile path - $filepath');
+                        uploadFile(pickedFileName! , pickedFile!.path);
+                      },
+                    )
                   ),
                 ),
-              ),'assets/icons/Paper clip.png',),
+                'assets/icons/Paper clip.png',
+              ),
             ],
           ),
         ),

@@ -3,6 +3,7 @@ import 'dart:ffi';
 import 'package:flutter/material.dart';
 import 'package:flutter_expandable_fab/flutter_expandable_fab.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:hive/hive.dart';
 import 'package:intl/intl.dart';
 import 'package:prayojana_new/screens/interactions%20page/create_new_interaction_new.dart';
 import 'package:prayojana_new/services/api_service.dart';
@@ -26,13 +27,6 @@ class _CalendarScreenState extends State<CalendarScreen> {
   List<Map<String, dynamic>> interactions = [];
 
   bool isOpened = false;
-
-  // AnimationController _animationController;
-  // Animation<color> _buttonColor;
-  // Animation<double> _animationIcon;
-  // Animation<double> _translateButton;
-  // Curve _curve = Curves.easeOut;
-  // double _fabheight = 56.0;
 
   bool showCalendar = false;
 
@@ -64,6 +58,9 @@ class _CalendarScreenState extends State<CalendarScreen> {
     print('today - $today');
     fetchCalendarDetails(); // Call the method to fetch details
   }
+
+
+
 
   void fetchCalendarDetails() async {
     final details = await CalenderApi().fetchCalendarDetails(formatDate(today), formatDate(today));
@@ -173,8 +170,8 @@ class _CalendarScreenState extends State<CalendarScreen> {
                  // rowHeight: 30.h,
                   headerStyle: const HeaderStyle(formatButtonVisible: false,titleCentered: true),
                   availableGestures: AvailableGestures.all,
-                  firstDay: DateTime.utc(2021, 1, 1),
-                  lastDay: DateTime.utc(2030, 12, 31),
+                  firstDay: DateTime.utc(1900, 1, 1),
+                  lastDay: DateTime.utc(3000, 12, 31),
                   focusedDay: today,
                   onDaySelected: _onDaySelected,
                   selectedDayPredicate: (day) => isSameDay(day, today),
@@ -393,6 +390,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
         ),
         children: [
           FloatingActionButton.extended(
+            heroTag: 'interaction',
             onPressed: () {
               _navigateToCreateInteractionScreen();
             },
@@ -401,6 +399,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
             backgroundColor: const Color(0xffffffff),
           ),
           FloatingActionButton.extended(
+            heroTag: 'task',
             onPressed: () {
               _navigateToCreateTaskScreen();
             },

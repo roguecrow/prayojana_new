@@ -339,6 +339,23 @@ class _MemberHealthState extends State<MemberHealth> {
     }
   }
 
+  String formatDob(String dob) {
+    if (dob == null || dob.isEmpty || dob == 'N/A') return 'N/A';
+
+    try {
+      // Split the date string by spaces
+      List<String> parts = dob.split(' ');
+
+      // Take the relevant parts: Sat Aug 12 1939
+      String formattedDob = '${parts[0]} ${parts[1]} ${parts[2]} ${parts[3]}';
+
+      return formattedDob;
+    } catch (e) {
+      print('Error parsing date: $e');
+      return dob;
+    }
+  }
+
 
 
   void _showDoctorInfo(BuildContext context, dynamic doctor) {
@@ -424,7 +441,7 @@ class _MemberHealthState extends State<MemberHealth> {
                       subtitle: Text(
                           doctor['doctor']['doctor_addresses'][index]['address']),
                     )
-                        : SizedBox.shrink(); // If it's not a matching address, return an empty SizedBox
+                        : const SizedBox.shrink(); // If it's not a matching address, return an empty SizedBox
                   },
                 ),
               ],
@@ -558,7 +575,7 @@ class _MemberHealthState extends State<MemberHealth> {
                             visible: selectedItemId != null,
                             child: DropdownButtonFormField2<String>(
                               value: selectedItemId2 ?? null,
-                                onChanged: (String? newValue) {
+                              onChanged: (String? newValue) {
                                 setState(() {
                                   selectedItemId2 = newValue;
                                   print('new selectedItemId2 - $selectedItemId2');
@@ -566,19 +583,30 @@ class _MemberHealthState extends State<MemberHealth> {
                                   print('selectedItemId2 - $selectedItemId2');
                                 });
                               },
-                              items: itemList2.map<DropdownMenuItem<String>>((Map<String, dynamic> item) {
-                                return DropdownMenuItem<String>(
-                                  value: item['id'].toString(),
-                                  child: Text(
-                                    item['address'],
-                                    style: GoogleFonts.inter(
-                                      textStyle: const TextStyle(
-                                        color: Colors.black,
+                              items: [
+                                ...itemList2.map<DropdownMenuItem<String>>((Map<String, dynamic> item) {
+                                  String? address = item['address'];
+
+                                  if (address != null) {
+                                    // Limit the length of the displayed address
+                                    if (address.length > 20) {
+                                      address = '${address.substring(0, 20)}...';
+                                    }
+                                  }
+
+                                  return DropdownMenuItem<String>(
+                                    value: item['id'].toString(),
+                                    child: Text(
+                                      address ?? '',
+                                      style: GoogleFonts.inter(
+                                        textStyle: const TextStyle(
+                                          color: Colors.black,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                );
-                              }).toList(),
+                                  );
+                                }),
+                              ],
                               dropdownStyleData: DropdownStyleData(
                                 maxHeight: 150.h,
                                 decoration: BoxDecoration(
@@ -868,7 +896,7 @@ class _MemberHealthState extends State<MemberHealth> {
 
                 _buildInfoRow('Blood Group', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['blood_group'] != null ? memberHealthDetails[0]['blood_group'] : 'N/A',fontSize: 14.0.sp),
                 _buildInfoRow('Vitacuro ID', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['vitacuro_id'] != null ? memberHealthDetails[0]['vitacuro_id'] : 'N/A',fontSize: 14.0.sp),
-                _buildInfoRow('Date Of Birth', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['dob'] != null ? memberHealthDetails[0]['dob'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Date Of Birth', formatDob(memberHealthDetails.isNotEmpty && memberHealthDetails[0]['dob'] != null ? memberHealthDetails[0]['dob'] : 'N/A'),fontSize: 14.0.sp),
                 _buildInfoRow('History', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['medical_history'] != null ? memberHealthDetails[0]['medical_history'] : 'N/A',fontSize: 14.0.sp),
               ],
             ),

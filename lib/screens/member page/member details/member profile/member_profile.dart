@@ -5,18 +5,20 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import 'package:prayojana_new/screens/member%20page/member%20details/member%20profile/member_profile_edit.dart';
 import 'package:prayojana_new/services/api_service.dart';
-
+import 'package:intl/intl.dart';
 import '../../../../other_app_navigator.dart';
 
 
 class MemberProfile extends StatefulWidget {
-  const MemberProfile({Key? key, required this.member}) : super(key: key);
+  const MemberProfile({Key? key, required this.member, required this.memberId}) : super(key: key);
 
   final Map<String, dynamic> member;
+  final int memberId;
 
   @override
   State<MemberProfile> createState() => _MemberProfileState();
 }
+
 
 
 class _MemberProfileState extends State<MemberProfile> {
@@ -24,12 +26,13 @@ class _MemberProfileState extends State<MemberProfile> {
   late BuildContext _storedContext;
   bool isLoading = true; // Add this line
   String? planName; // Make planName nullable
+  var memberId;
 
   @override
   void initState() {
     super.initState();
     if (widget.member != null) {
-      _fetchMemberDetails();
+      _fetchMemberDetails(widget.memberId);
     } else {
       print('Error: widget.member is null');
     }
@@ -38,6 +41,25 @@ class _MemberProfileState extends State<MemberProfile> {
   @override
   void dispose() {
     super.dispose();
+  }
+
+
+
+  String formatDob(String dob) {
+    if (dob == null || dob.isEmpty || dob == 'N/A') return 'N/A';
+
+    try {
+      // Split the date string by spaces
+      List<String> parts = dob.split(' ');
+
+      // Take the relevant parts: Sat Aug 12 1939
+      String formattedDob = '${parts[0]} ${parts[1]} ${parts[2]} ${parts[3]}';
+
+      return formattedDob;
+    } catch (e) {
+      print('Error parsing date: $e');
+      return dob;
+    }
   }
 
 
@@ -54,33 +76,40 @@ class _MemberProfileState extends State<MemberProfile> {
           ),
           value != null && label.toLowerCase() == 'location'
               ? GestureDetector(
+            onLongPress: () {
+              _copyToClipboard(context, value);
+            },
             onTap: () {
-              // Handle location click action here
               MapUtils.openMap(value);
               print('Location clicked: $value');
             },
             child: Container(
-              width: 150, // Set a maximum width for the value text
+              width: 130.w, // Set a maximum width for the value text
               child: Text(
-                value,
+                value.length > 20 ? '${value.substring(0, 20)}...' : value,
                 style: TextStyle(
                   fontSize: fontSize,
                   fontWeight: fontWeight,
-                  color: Colors.blue, // Style it as a link
-                  decoration: TextDecoration.underline, // Underline it
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
                 ),
               ),
             ),
           )
-              :label.toLowerCase() == 'mobile' ||
+              : label.toLowerCase() == 'mobile' ||
               label.toLowerCase() == 'emergency contact' ||
-              label.toLowerCase() == 'alternative mobile'
+              label.toLowerCase() == 'alternative mobile' ||
+              label.toLowerCase() == 'what\'s app' ||
+              label.toLowerCase() == 'landline'
               ? GestureDetector(
+            onLongPress: () {
+              _copyToClipboard(context, value);
+            },
             onTap: () {
               makeCall.makePhoneCall('tel:$value');
             },
             child: Container(
-              width: 150, // Set a maximum width for the value text
+              width: 130.w, // Set a maximum width for the value text
               child: Text(
                 value!,
                 style: TextStyle(
@@ -93,7 +122,7 @@ class _MemberProfileState extends State<MemberProfile> {
             ),
           )
               : Container(
-            width: 150, // Set a maximum width for the value text
+            width: 130.w, // Set a maximum width for the value text
             child: Text(
               value ?? 'N/A',
               style: TextStyle(fontSize: fontSize, fontWeight: fontWeight),
@@ -104,11 +133,59 @@ class _MemberProfileState extends State<MemberProfile> {
     );
   }
 
+  void _copyToClipboard(BuildContext context, String text) {
+    Clipboard.setData(ClipboardData(text: text));
+    showCustomTopSnackbar(context, '$text] Copied To Clipboard');
+  }
+
+  void showCustomTopSnackbar(BuildContext context, String message) {
+    final overlay = Overlay.of(context);
+    OverlayEntry overlayEntry;
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        top: MediaQuery.of(context).padding.top + 50.0.h,
+        left: 16.0.w,
+        right: 16.0.w,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.0.w, vertical: 6.0.h),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.5), // 50% transparent red
+              borderRadius: BorderRadius.circular(8.0),
+            ),
+            child: Center(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16.0.sp,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      overlayEntry.remove();
+    });
+  }
 
 
 
-  Future<void> _fetchMemberDetails() async {
-    var memberId = widget.member['id'];
+  Future<void> _fetchMemberDetails(memId) async {
+
+    if(memId == 0) {
+      memberId = widget.member['id'];
+    }
+    else {
+      memberId = memId;
+    }
     print('Clicked Member ID: $memberId');
     List<dynamic>? details = await MemberApi().fetchMemberDetails(memberId);
     if (details != null && details.isNotEmpty) {
@@ -255,11 +332,13 @@ class _MemberProfileState extends State<MemberProfile> {
                   ),
                   _buildInfoRow(
                     'Date Of Birth',
-                    memberDetails.isNotEmpty &&
-                        memberDetails[0]['dob'] != null &&
-                        memberDetails[0]['dob'].isNotEmpty
-                        ? memberDetails[0]['dob']
-                        : 'N/A',
+                    formatDob(
+                      memberDetails.isNotEmpty &&
+                          memberDetails[0]['dob'] != null &&
+                          memberDetails[0]['dob'].isNotEmpty
+                          ? memberDetails[0]['dob']
+                          : 'N/A',
+                    ),
                     fontSize: 14.0.sp,
                   ),
                 ],
@@ -331,25 +410,35 @@ class _MemberProfileState extends State<MemberProfile> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildInfoRow(
-                    'Pin Code',
+                    'Pin',
                     memberDetails.isNotEmpty ? memberDetails[0]['zip'] : 'N/A',
                     fontSize: 14.0.sp,
                   ),
-                  _buildInfoRow(
-                    'Address Line 1',
-                    memberDetails.isNotEmpty ? memberDetails[0]['address1'] : 'N/A',
-                    fontSize: 14.0.sp,
+
+                  Column(
+                    children: [
+                      _buildInfoRow(
+                        'Address',
+                        memberDetails.isNotEmpty ? ' ${memberDetails[0]['address1']}, ${memberDetails[0]['address2']}, ${memberDetails[0]['address3']}' : 'N/A',
+                        fontSize: 14.0.sp,
+                      ),
+                    ],
                   ),
-                  _buildInfoRow(
-                    'Address Line 2',
-                    memberDetails.isNotEmpty ? memberDetails[0]['address2'] : 'N/A',
-                    fontSize: 14.0.sp,
-                  ),
-                  _buildInfoRow(
-                    'Address Line 3',
-                    memberDetails.isNotEmpty ? memberDetails[0]['address3'] : 'N/A',
-                    fontSize: 14.0.sp,
-                  ),
+                  // _buildInfoRow(
+                  //   'Address Line 1',
+                  //   memberDetails.isNotEmpty ? memberDetails[0]['address1'] : 'N/A',
+                  //   fontSize: 14.0.sp,
+                  // ),
+                  // _buildInfoRow(
+                  //   'Address Line 2',
+                  //   memberDetails.isNotEmpty ? memberDetails[0]['address2'] : 'N/A',
+                  //   fontSize: 14.0.sp,
+                  // ),
+                  // _buildInfoRow(
+                  //   'Address Line 3',
+                  //   memberDetails.isNotEmpty ? memberDetails[0]['address3'] : 'N/A',
+                  //   fontSize: 14.0.sp,
+                  // ),
                   _buildInfoRow(
                     'Area',
                     memberDetails.isNotEmpty ? memberDetails[0]['area'] : 'N/A',
@@ -360,11 +449,11 @@ class _MemberProfileState extends State<MemberProfile> {
                     memberDetails.isNotEmpty ? memberDetails[0]['city'] : 'N/A',
                     fontSize: 14.0.sp,
                   ),
-                  _buildInfoRow(
-                    'State',
-                    memberDetails.isNotEmpty ? memberDetails[0]['state'] : 'N/A',
-                    fontSize: 14.0.sp,
-                  ),
+                  // _buildInfoRow(
+                  //   'State',
+                  //   memberDetails.isNotEmpty ? memberDetails[0]['state'] : 'N/A',
+                  //   fontSize: 14.0.sp,
+                  // ),
                   _buildInfoRow(
                     'Location',
                     memberDetails.isNotEmpty ? memberDetails[0]['location'] : 'N/A',
@@ -483,7 +572,7 @@ class _MemberProfileState extends State<MemberProfile> {
 
     if (shouldCreate == true) {
       // Refresh the task data after updating
-      _fetchMemberDetails();
+      _fetchMemberDetails(memberId);
     }
   }
 }
