@@ -66,8 +66,9 @@ class ApiService {
 
 
 class MemberApi {
-  Future<List<dynamic>?> fetchMembersData(carebuddy , pageNo, statusList, plans, locality) async {
+  Future<List<dynamic>?> fetchMembersData(roleId, carebuddy , pageNo, statusList, plans, locality) async {
 
+    print('roleId - $roleId');
     print('carebuddy - $carebuddy');
     print('pageNo - $pageNo');
     print('status - $statusList');
@@ -89,6 +90,10 @@ class MemberApi {
 
     if (pageNo != null) {
       requestBody['page_no'] = pageNo;
+    }
+
+    if (roleId != null) {
+      requestBody['role_id'] = roleId;
     }
 
     if (statusList != null) {
@@ -147,7 +152,9 @@ class MemberApi {
     return response;
   }
 
-  Future<List<dynamic>?> fetchTaskMembersData( from, to, carebuddy, pageNo, status, members,) async {
+  Future<List<dynamic>?> fetchTaskMembersData( from, to, carebuddy, pageNo, status, members, roleId) async {
+
+    print('roleId - $roleId');
     print('from - $from');
     print('to - $to');
     print('carebuddy - $carebuddy');
@@ -181,6 +188,10 @@ class MemberApi {
 
     if (pageNo != null) {
       requestBody['page_no'] = pageNo;
+    }
+
+    if (roleId != null) {
+      requestBody['role_id'] = roleId;
     }
 
     if (status != null) {
@@ -489,6 +500,35 @@ class MemberApi {
       return null;
     }
   }
+
+  Future<int?> deleteMemberDocument(int memberId, int documentId) async {
+    try {
+      String accessToken = await getFirebaseAccessToken();
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({'query': deleteMemberDocumentsMutation(memberId, documentId)}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        int? affectedRows = data['data']['delete_member_documents']['affected_rows'];
+        return affectedRows;
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+        return null;
+      }
+    } catch (error) {
+      print('Error Deleting member document: $error');
+      return null;
+    }
+  }
+
 }
 
 class TaskApi{
@@ -574,7 +614,15 @@ class TaskApi{
 
 class InteractionApi {
 
-  Future<List<dynamic>?> fetchInteractionDataTypes(from, to, carebuddy, pageNo, status, members,) async {
+  Future<List<dynamic>?> fetchInteractionDataTypes(from, to, carebuddy, pageNo, status, members,roleId) async {
+
+    print('from - $from');
+    print('to - $to');
+    print('roleId - $roleId');
+    print('carebuddy - $carebuddy');
+    print('pageNo - $pageNo');
+    print('status - $status');
+    print('members - $members');
 
     String accessToken = await getFirebaseAccessToken();
     var headers = {
@@ -601,6 +649,10 @@ class InteractionApi {
 
     if (pageNo != null) {
       requestBody['page_no'] = pageNo;
+    }
+
+    if (roleId != null) {
+      requestBody['role_id'] = roleId;
     }
 
     if (status != null) {
@@ -661,7 +713,6 @@ class InteractionApi {
       return [];
     }
   }
-
 }
 
 class FCMMessaging {

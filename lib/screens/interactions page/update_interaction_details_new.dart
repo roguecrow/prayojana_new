@@ -80,8 +80,14 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
       _notesController.text = selectedInteractionMember['interaction']['notes'];
       selectedInteractionStatusTypeId = selectedInteractionMember['interaction']['interaction_status_type_id'];
       selectedInteractionTypeId = selectedInteractionMember['interaction']['interaction_type_id'];
-      //fileUrl = selectedInteractionMember['interaction']['interaction_attachements']['url'];
-      //print('fileUrl - $fileUrl');
+      List<dynamic> attachments = selectedInteractionMember['interaction']['interaction_attachements'];
+      if (attachments.isNotEmpty) {
+        String url = attachments[0]['url'];
+        List<String> parts = url.split('/');
+        String fileName = parts.last;
+        print(fileName);
+        fileNameController.text = fileName;
+      }
 
       print('selectedInteractionMember - $selectedInteractionMember');
       _fetchMemberName();
@@ -123,7 +129,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
         print('API Error: ${response.reasonPhrase}');
       }
     } catch (error) {
-      print('Error fetching task status types: $error');
+      print('Error fetching interaction types: $error');
     }
   }
 
@@ -151,7 +157,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
         print('API Error: ${response.reasonPhrase}');
       }
     } catch (error) {
-      print('Error fetching task status types: $error');
+      print('Error fetching interaction status types: $error');
     }
   }
 
@@ -444,11 +450,14 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
     if (_dueDateController.text.isNotEmpty) {
       initialDate = DateFormat('dd MMM yyyy').parse(_dueDateController.text);
     }
+    if (initialDate.isBefore(DateTime.now())) {
+      initialDate = DateTime.now();
+    }
 
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: initialDate,
+      firstDate: DateTime.now(),
       lastDate: DateTime(2101),
     );
 
@@ -617,7 +626,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
       String accessToken = await getFirebaseAccessToken();
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/50?image'),
+        Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/${selectedInteractionMember['member_id']}?image'),
       );
       request.files.add(await http.MultipartFile.fromPath(
           'image', filePath,
@@ -881,7 +890,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                     style: TextStyle(
                       fontSize: 14.sp,
                     ),
-                    maxLength: 40, // Set the maximum length to 30 characters
+                    maxLength: 100, // Set the maximum length to 30 characters
                     maxLengthEnforcement: MaxLengthEnforcement.enforced, // Enforce the maximum length
                     decoration: const InputDecoration(
                       label: Text('Notes'),

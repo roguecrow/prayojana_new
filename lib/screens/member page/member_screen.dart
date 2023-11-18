@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
 import 'package:prayojana_new/graphql_queries.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants.dart';
 import '../../models/drawer_items.dart';
 import 'package:http/http.dart' as http;
@@ -35,6 +36,12 @@ class _MemberScreenState extends State<MemberScreen> {
   List<Map<String, dynamic>> memberStatusTypes = []; // Store task status types here
   List<Map<String, dynamic>> localityTypes = []; // Store task status types here
   List<Map<String, dynamic>>  planTypes = []; // Add this line to store the member names and IDs
+  List<Map<String, dynamic>> roleTypes = [
+    {'id': 1, 'name': 'Admin'},
+    {'id': 2, 'name': 'Captain'},
+    {'id': 4, 'name': 'Carebuddy'},
+  ]; // Example list of role types
+  int? roleId;
 
 
 
@@ -135,6 +142,15 @@ class _MemberScreenState extends State<MemberScreen> {
                                       },
                                       tileColor: selectedTileIndex == 2 ? const Color(0xfff1f9ff) : null,
                                     ),
+                                    ListTile(
+                                      title:  Text('Role',style: TextStyle(color: selectedTileIndex == 3 ?  const Color(0xff006bbf) : null)),
+                                      onTap: () {
+                                        setState(() {
+                                          selectedTileIndex = 3;
+                                        });
+                                      },
+                                      tileColor: selectedTileIndex == 3 ? const Color(0xfff1f9ff) : null,
+                                    ),
                                   ],
                                 ),
                               ),
@@ -148,7 +164,32 @@ class _MemberScreenState extends State<MemberScreen> {
                               flex: 3,
                               child: SizedBox(
                                 height: ScreenUtil().screenHeight * 0.75 - 120.0.h,
-                                child: Column(
+                                child: selectedTileIndex == 3
+                                    ?ListView.builder(
+                                  physics: const BouncingScrollPhysics(),
+                                  itemCount: roleTypes.length,
+                                  itemBuilder: (BuildContext context, int index) {
+                                    return ListTile(
+                                      title: Text(roleTypes[index]['name'] as String),
+                                      tileColor: roleId == roleTypes[index]['id'] ? const Color(0xfff1f9ff) : null,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: roleId == roleTypes[index]['id']
+                                            ? BorderRadius.circular(10.0) // Adjust the border radius as needed
+                                            : BorderRadius.circular(0.0), // No border radius for unselected tiles
+                                        side: roleId == roleTypes[index]['id']
+                                            ? const BorderSide(color: Colors.blue, width: 1.0) // Border color and width for selected tile
+                                            : BorderSide.none, // No border for unselected tiles
+                                      ),
+                                      onTap: () {
+                                        setState(() {
+                                          roleId = roleTypes[index]['id'] as int?;
+                                          print(roleId);
+                                        });
+                                      },
+                                    );
+                                  },
+                                )
+                                    : Column(
                                   children: [
                                     Expanded(
                                       child: ListView.builder(
@@ -252,6 +293,7 @@ class _MemberScreenState extends State<MemberScreen> {
                                       selectedStatusIds.clear();
                                       selectedPlanIds.clear(); // Clear the selected IDs list
                                       selectedCities.clear();
+                                      getRoleIdFromLocal();
                                       print('clearedCities - $selectedCities');
                                       print('clearedStatus - $selectedStatusIds');
                                       print('clearedMemberIds - $selectedPlanIds');
@@ -268,7 +310,8 @@ class _MemberScreenState extends State<MemberScreen> {
                                   onPressed: () async {
                                     print('apply');
                                     _membersData = [];
-                                    await fetchMembersData(null, null,selectedStatusIds,selectedPlanIds,selectedCities);
+                                    page = 1;
+                                    await fetchMembersData(roleId,null, page,selectedStatusIds,selectedPlanIds,selectedCities);
                                     // ignore: use_build_context_synchronously
                                     Navigator.pop(context); // Close the bottom sheet
                                     // Handle apply button press
@@ -309,6 +352,10 @@ class _MemberScreenState extends State<MemberScreen> {
       if (index != -1) {
         setState(() {
           _membersData![index] = updatedMember;
+          selectedStatusIds.clear();
+          selectedPlanIds.clear(); // Clear the selected IDs list
+          selectedCities.clear();
+          getRoleIdFromLocal();
         });
       }
     }
@@ -338,19 +385,25 @@ class _MemberScreenState extends State<MemberScreen> {
   @override
   void initState() {
     super.initState();
-    fetchMembersData(null,null,null,null,null);
+    getRoleIdFromLocal();
+    fetchMembersData(null,null,null,null,null,null);
     fetchMemberStatusTypes();
     fetchPlanTypes();
     fetchLocality();
+    scrollController.addListener(_scrollListener);
+  }
+  getRoleIdFromLocal() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    roleId = prefs.getInt('roleId');
+    print('roleID from local - $roleId');
   }
 
 
-  Future<void> fetchMembersData(carebuddy , pageNo, statusList, plans, locality) async {
-
+  Future<void> fetchMembersData(roleId,carebuddy , pageNo, statusList, plans, locality) async {
     var formattedLocality, formattedStatus , formattedPlans;
 
-    if(statusList != null) {
-      formattedStatus = statusList.join(',');
+    if (statusList != null) {
+      formattedStatus = statusList.join(',') ;
     }
     if (locality != null) {
       formattedLocality = locality.join(',');
@@ -362,7 +415,7 @@ class _MemberScreenState extends State<MemberScreen> {
     MemberApi memberApi = MemberApi();
 
     // Fetch members data
-    List<dynamic>? members = await memberApi.fetchMembersData(null, null,formattedStatus,formattedPlans,formattedLocality);
+    List<dynamic>? members = await memberApi.fetchMembersData(roleId , null, pageNo,formattedStatus,formattedPlans,formattedLocality);
 
     setState(() {
       _membersData = [...?_membersData, ...members!]; // Concatenate the new data
@@ -504,13 +557,12 @@ class _MemberScreenState extends State<MemberScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(32.0.r),
                       ),
-                      backgroundColor: getButtonColor(isFilterButtonPressed),
+                      backgroundColor: Colors.transparent,
                     ),
-                    child: Text(
+                    child: const Text(
                       'FILTER',
-                      style: TextStyle(color: getButtonTextColor(isFilterButtonPressed)),
-                    ),
-                  ),
+                      style: TextStyle(color:Color(0xff6b7280)),
+                    ),),
                 ),
               ],
             ),
@@ -519,6 +571,7 @@ class _MemberScreenState extends State<MemberScreen> {
             child: _membersData == null
                 ? const Center(child: CircularProgressIndicator())
                 : ListView.builder(
+              controller: scrollController ,
               itemCount: _membersData!.length,
               itemBuilder: (context, index) {
                 final member = _membersData![index];
@@ -530,6 +583,7 @@ class _MemberScreenState extends State<MemberScreen> {
                 final mstName = member['mst_name'] ?? '';
                 final mstColor = member['status_color'] ?? '';
                 final familyName = member['family_name'] ?? memberLastName;
+               // print('Familyname - $familyName');
 
                 return Column(
                   children: [
@@ -620,5 +674,22 @@ class _MemberScreenState extends State<MemberScreen> {
       ),
     );
   }
+  void _scrollListener() {
+    if (!isLoading &&
+        scrollController.position.pixels ==
+            scrollController.position.maxScrollExtent &&
+        fetchedLen == 10 ) { // Check if filter is not applied
+      setState(() {
+        isLoading = true; // Set loading state to true
+      });
+      page = page + 1;
+      fetchMembersData(roleId,null, page,selectedStatusIds,selectedPlanIds,selectedCities).then((_) {
+        setState(() {
+          isLoading = false; // Set loading state to false after data is loaded
+        });
+      });
+    }
+  }
+
 }
 

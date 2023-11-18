@@ -85,9 +85,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     await FirebaseAuth.instance.verifyPhoneNumber(
       phoneNumber: number,
-      timeout: const Duration(seconds: 1),
+      timeout: const Duration(seconds: 10),
       verificationCompleted: (PhoneAuthCredential credential) {
-        //showSnackBarText("Auth Completed!");
+        showSnackBarText("Auth Completed!");
       },
       verificationFailed: (FirebaseAuthException e) {
         showDialog(
@@ -190,6 +190,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('loginUserDetails', response.body);
         await prefs.setInt('userId', json.decode(response.body)['user_id']);
+        await prefs.setInt('roleId', json.decode(response.body)['role_id']);
         //initiates fire firebase messaging api
         await FirebaseApi().initNotification();
         Navigator.of(context).pushReplacement(

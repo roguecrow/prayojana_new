@@ -39,7 +39,7 @@ class _CreateInteractionNewState extends State<CreateInteractionNew> {
   List<Map<String, dynamic>> interactionTypes = [];
   List<dynamic> serviceProviderTypes = [];
   int? selectedInteractionTypeId;
-  int? selectedInteractionStatusTypeId = 4;
+  int? selectedInteractionStatusTypeId = 2;
   List<String> memberNames = [];
   Member? _selectedMember;
   List<Member> _availableMembers = []; // List of available members for the dropdown
@@ -133,7 +133,7 @@ class _CreateInteractionNewState extends State<CreateInteractionNew> {
       String accessToken = await getFirebaseAccessToken();
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/50?image'),
+        Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/${_selectedMember!.id}?image'),
       );
       request.files.add(await http.MultipartFile.fromPath(
           'image', filePath,
@@ -664,7 +664,7 @@ class _CreateInteractionNewState extends State<CreateInteractionNew> {
                 padding: EdgeInsets.only(top:25.0.h,left: 20.0.w,right: 20.0.w,bottom: 15.0.h),
                 child: TextFormField(
                   controller: _interactionTitleController,
-                  maxLength: 35, // Set the maximum length to 30 characters
+                  maxLength: 30, // Set the maximum length to 30 characters
                   decoration: InputDecoration(
                     hintText: 'Interaction Title*',
                     hintStyle: TextStyle(
@@ -815,7 +815,7 @@ class _CreateInteractionNewState extends State<CreateInteractionNew> {
               // ),
               buildInfoColumn(TextFormField(
                 controller: _notesController, // Attach the TextEditingController
-                maxLength: 40, // Set the maximum length to 30 characters
+                maxLength: 100, // Set the maximum length to 30 characters
                 style: TextStyle(
                   fontSize: 14.sp,
                 ),

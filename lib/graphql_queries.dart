@@ -241,6 +241,23 @@ const String updateTaskQuery = r'''
       }
     ) {
       affected_rows
+      returning {
+       due_date
+       due_time
+       id
+       service_provider_id
+       task_notes
+       task_title
+       task_status_type_id
+       task_status_type {
+         name
+       }
+       task_attachements {
+         file_type
+         id
+         url
+       }
+     }
     }
   }
 ''';
@@ -820,6 +837,34 @@ query MyQuery {
 }
   ''';
 }
+
+String deleteMemberDocumentsMutation(int memberId, int documentId) {
+  return '''
+mutation MyMutation {
+  delete_member_documents(where: {member_id: {_eq: $memberId}, id: {_eq: $documentId}}) {
+    affected_rows
+  }
+}
+  ''';
+}
+
+String insertMemberDocumentMutation(int memberId, String image, String name) {
+  return '''
+mutation MyMutation {
+  insert_member_documents(objects: {image: "$image", name: "$name", member_id: $memberId}) {
+    affected_rows
+    returning {
+      id
+      image
+      name
+      member_id
+    }
+  }
+}
+  ''';
+}
+
+
 
 String getPrayojanaProfileQuery(int id) {
   return '''

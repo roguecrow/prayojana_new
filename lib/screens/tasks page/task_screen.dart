@@ -10,6 +10,7 @@ import 'package:prayojana_new/constants.dart';
 import 'package:http/http.dart' as http;
 import 'package:prayojana_new/screens/tasks%20page/update_task_details_new.dart';
 import 'package:prayojana_new/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../graphql_queries.dart';
 import '../../models/drawer_items.dart';
 import 'create_new_task_new.dart';
@@ -31,14 +32,20 @@ class _TaskScreenState extends State<TaskScreen> {
   Set<int> selectedStatusIds = {};
   Set<int> selectedMemberIds = {};
   bool isLoading = false;
-  DateTime startOfWeek = DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
-  late DateTime endOfWeek;
   bool isTodayButtonPressed = false;
   bool isWeekButtonPressed = false;
   bool isFilterButtonPressed = false;
   final scrollController = ScrollController();
   int page = 1;
   int fetchedLen = 10;
+  List<Map<String, dynamic>> roleTypes = [
+    {'id': 1, 'name': 'Admin'},
+    {'id': 2, 'name': 'Captain'},
+    {'id': 4, 'name': 'Carebuddy'},
+  ];
+  int? roleId;
+  late DateTime startOfWeek;
+  late DateTime endOfWeek;
 
   Color getButtonColor(bool isPressed) =>
       isPressed ? const Color(0xff6b7280) : Colors.transparent;
@@ -62,12 +69,13 @@ class _TaskScreenState extends State<TaskScreen> {
     if (isTodayButtonPressed) {
       print('empty 1');
       _taskData = null;
-      await fetchTaskData(null, null, null, null, null, null);
+      await fetchTaskData(null, null, null, null, null, null,null);
     } else {
       print('today');
-      DateTime today = DateTime.now();
+      today = DateTime.now();
       _taskData = null;
-      await fetchTaskData(today, today, null, null, null, null);
+      page = 1;
+      await fetchTaskData(today, today, null, page, null, null, roleId);
     }
     updateButtonStates(today: !isTodayButtonPressed, week: false, filter: false);
   }
@@ -77,13 +85,14 @@ class _TaskScreenState extends State<TaskScreen> {
       print('empty 2');
       _taskData = null;
 
-      await fetchTaskData(null, null, null, null, null, null);
+      await fetchTaskData(null, null, null, null, null, null,null);
     } else {
       _taskData = null;
-
-      DateTime endOfWeek = startOfWeek.add(const Duration(days: 6));
+      startOfWeek = DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
+      endOfWeek = startOfWeek.add(const Duration(days: 6));
+      page = 1;
       print('week');
-      await fetchTaskData(startOfWeek, endOfWeek, null, null, null, null);
+      await fetchTaskData(startOfWeek, endOfWeek, null, page, null, null, roleId);
     }
     updateButtonStates(today: false, week: !isWeekButtonPressed, filter: false);
   }
@@ -156,15 +165,15 @@ class _TaskScreenState extends State<TaskScreen> {
                                       },
                                       tileColor: selectedTileIndex == 0 ? const Color(0xfff1f9ff) : null,
                                     ),
-                                    // ListTile(
-                                    //   title:  Text('Due Date',style: TextStyle(color: selectedTileIndex == 1 ?  const Color(0xff006bbf) : null)),
-                                    //   onTap: () {
-                                    //     setState(() {
-                                    //       selectedTileIndex = 1;
-                                    //     });
-                                    //   },
-                                    //   tileColor: selectedTileIndex == 1 ? const Color(0xfff1f9ff) : null,
-                                    // ),
+                                    ListTile(
+                                      title:  Text('Role',style: TextStyle(color: selectedTileIndex == 3 ?  const Color(0xff006bbf) : null)),
+                                      onTap: () {
+                                        setState(() {
+                                          selectedTileIndex = 3;
+                                        });
+                                      },
+                                      tileColor: selectedTileIndex == 3 ? const Color(0xfff1f9ff) : null,
+                                    ),
                                     ListTile(
                                       title:  Text('Members',style: TextStyle(color: selectedTileIndex == 2 ?  const Color(0xff006bbf) : null)),
                                       onTap: () {
@@ -187,7 +196,32 @@ class _TaskScreenState extends State<TaskScreen> {
                               flex: 3,
                               child: SizedBox(
                                 height: ScreenUtil().screenHeight * 0.75 - 120.0.h,
-                                child: ListView.builder(
+                                child: selectedTileIndex == 3
+                                    ?ListView.builder(
+                                  physics: const BouncingScrollPhysics(),
+                                  itemCount: roleTypes.length,
+                                  itemBuilder: (BuildContext context, int index) {
+                                    return ListTile(
+                                      title: Text(roleTypes[index]['name'] as String),
+                                      tileColor: roleId == roleTypes[index]['id'] ? const Color(0xfff1f9ff) : null,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: roleId == roleTypes[index]['id']
+                                            ? BorderRadius.circular(10.0) // Adjust the border radius as needed
+                                            : BorderRadius.circular(0.0), // No border radius for unselected tiles
+                                        side: roleId == roleTypes[index]['id']
+                                            ? const BorderSide(color: Colors.blue, width: 1.0) // Border color and width for selected tile
+                                            : BorderSide.none, // No border for unselected tiles
+                                      ),
+                                      onTap: () {
+                                        setState(() {
+                                          roleId = roleTypes[index]['id'] as int?;
+                                          print(roleId);
+                                        });
+                                      },
+                                    );
+                                  },
+                                )
+                                : ListView.builder(
                                   physics: const BouncingScrollPhysics(),
                                   itemCount: selectedTileIndex == 0
                                       ? taskStatusTypes.length
@@ -275,6 +309,7 @@ class _TaskScreenState extends State<TaskScreen> {
                                     setState(() {
                                       selectedStatusIds.clear();
                                       selectedMemberIds.clear(); // Clear the selected IDs list
+                                      getRoleIdFromLocal();
                                       print('clearedStatus - $selectedStatusIds');
                                       print('clearedMemberIds - $selectedMemberIds');
                                     });
@@ -290,7 +325,8 @@ class _TaskScreenState extends State<TaskScreen> {
                                   onPressed: () async {
                                     print('apply');
                                     _taskData = null;
-                                    await fetchTaskData(null, null, null, null, selectedStatusIds, selectedMemberIds);
+                                    page =1;
+                                    await fetchTaskData(null, null, null, page, selectedStatusIds, selectedMemberIds,roleId);
                                     Navigator.pop(context); // Close the bottom sheet
                                     // Handle apply button press
                                   },
@@ -320,10 +356,18 @@ class _TaskScreenState extends State<TaskScreen> {
   void initState() {
     super.initState();
     print('inistaste');
-    fetchTaskData(null, null, null, null, null, null);
+    getRoleIdFromLocal();
+    fetchTaskData(null, null, null, null, null, null,null);
     fetchMemberNames();
     _fetchTaskStatusTypes(); // Fetch task status types when the screen initializes
     scrollController.addListener(_scrollListener);
+  }
+
+
+  getRoleIdFromLocal() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    roleId = prefs.getInt('roleId');
+    print('roleID from local - $roleId');
   }
 
   void fetchMemberNames() async {
@@ -339,7 +383,7 @@ class _TaskScreenState extends State<TaskScreen> {
     return DateFormat('yyyy-MM-dd').format(date);
   }
 
-  Future<void> fetchTaskData(from, to, carebuddy, pageNo, statusList, membersList) async {
+  Future<void> fetchTaskData(from, to, carebuddy, pageNo, statusList, membersList,roleId) async {
     var formattedFrom = null, formattedTo= null;
     // ignore: prefer_typing_uninitialized_variables
     var formattedMember, formattedStatus;
@@ -356,7 +400,7 @@ class _TaskScreenState extends State<TaskScreen> {
     }
 
 
-    List<dynamic>? newTasks = await MemberApi().fetchTaskMembersData(formattedFrom,formattedTo, null, pageNo ,formattedStatus , formattedMember);
+    List<dynamic>? newTasks = await MemberApi().fetchTaskMembersData(formattedFrom,formattedTo, null, pageNo ,formattedStatus , formattedMember,roleId);
     setState(() {
       _taskData = [...?_taskData, ...newTasks!]; // Concatenate the new data
       print('PAGE NO $pageNo - _TASK DATA $_taskData');
@@ -366,7 +410,6 @@ class _TaskScreenState extends State<TaskScreen> {
     });
 
     _taskData ??= [];
-
   }
 
   void _fetchTaskStatusTypes() async {
@@ -478,11 +521,11 @@ class _TaskScreenState extends State<TaskScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(32.0.r),
                       ),
-                      backgroundColor: getButtonColor(isFilterButtonPressed),
+                      backgroundColor: Colors.transparent,
                     ),
-                    child: Text(
+                    child: const Text(
                       'FILTER',
-                      style: TextStyle(color: getButtonTextColor(isFilterButtonPressed)),
+                      style: TextStyle(color:Color(0xff6b7280)),
                     ),),
                 ),
               ],
@@ -585,11 +628,28 @@ class _TaskScreenState extends State<TaskScreen> {
         isLoading = true; // Set loading state to true
       });
       page = page + 1;
-      fetchTaskData(null, null, null, page, null, null).then((_) {
-        setState(() {
-          isLoading = false; // Set loading state to false after data is loaded
+      if(isTodayButtonPressed) {
+        fetchTaskData(today, today, null, page, selectedStatusIds, selectedMemberIds,roleId).then((_) {
+          setState(() {
+            isLoading = false; // Set loading state to false after data is loaded
+          });
         });
-      });
+      }
+      else if(isWeekButtonPressed) {
+        fetchTaskData(startOfWeek, endOfWeek, null, page, selectedStatusIds, selectedMemberIds,roleId).then((_) {
+          setState(() {
+            isLoading = false; // Set loading state to false after data is loaded
+          });
+        });
+      }
+
+      else {
+        fetchTaskData(null, null, null, page, selectedStatusIds, selectedMemberIds,roleId).then((_) {
+          setState(() {
+            isLoading = false; // Set loading state to false after data is loaded
+          });
+        });
+      }
     }
   }
 
@@ -603,7 +663,12 @@ class _TaskScreenState extends State<TaskScreen> {
     );
     if(shouldUpdate == true) {
       _taskData = null;
-      fetchTaskData(null,null, null, null, null, null);
+      selectedStatusIds.clear();
+      selectedMemberIds.clear(); // Clear the selected IDs list
+      getRoleIdFromLocal();
+      isTodayButtonPressed = false;
+      isWeekButtonPressed = false;
+      fetchTaskData(null,null, null, null, null, null, null);
     }
   }
 
@@ -616,7 +681,7 @@ class _TaskScreenState extends State<TaskScreen> {
     if (shouldCreate == true) {
       _taskData = null;
       // Refresh the task data after updating
-      fetchTaskData(null,null, null, null, null, null);
+      fetchTaskData(null,null, null, null, null, null, null);
     }
   }
 }

@@ -46,7 +46,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
   TimeOfDay? _selectedTime;
   int? serviceProviderTypeId;
   int? serviceProviderId;
-  int taskStatusTypeId = 1;
+  int taskStatusTypeId = 2;
   late int careBuddyId;
   int createdBy = 8;
   bool isLoading = false;
@@ -277,7 +277,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
       String accessToken = await getFirebaseAccessToken();
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/50?image'),
+        Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/${_selectedMember!.id}?image'),
       );
       request.files.add(await http.MultipartFile.fromPath(
           'image', filePath,
@@ -484,7 +484,6 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
         isLoading = false;
       });
     }
-
     return null;
   }
 
@@ -585,7 +584,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
                 padding: EdgeInsets.only(left: 20.0.w ,right:20.0.w,top: 40.0.h),
                 child: TextFormField(
                   controller: _taskTitleController,
-                  maxLength: 35, // Set the maximum length to 30 characters
+                  maxLength: 30, // Set the maximum length to 30 characters
                   decoration: InputDecoration(
                     hintText: 'Task Title*',
                     hintStyle: TextStyle(
@@ -780,7 +779,7 @@ class _CreateTaskNewState extends State<CreateTaskNew> {
 
               buildInfoColumn( TextFormField(
                 controller: _notesController,
-                maxLength: 40, // Set the maximum length to 30 characters
+                maxLength: 100, // Set the maximum length to 30 characters
                 decoration: const InputDecoration(
                   labelText: 'Add Notes',
                   enabledBorder: UnderlineInputBorder(

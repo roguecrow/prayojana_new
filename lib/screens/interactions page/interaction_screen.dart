@@ -7,6 +7,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
   import 'package:http/http.dart' as http;
   import 'package:intl/intl.dart';
 import 'package:prayojana_new/screens/interactions%20page/update_interaction_details_new.dart';
+import 'package:shared_preferences/shared_preferences.dart';
   import '../../constants.dart';
   import '../../graphql_queries.dart';
   import '../../models/drawer_items.dart';
@@ -38,6 +39,15 @@ import 'create_new_interaction_new.dart';
     DateTime toDate = DateTime.now().add(const Duration(days: 7)); // Initial "to" date (7 days from now)
     int page = 1;
     int fetchedLen = 10;
+    List<Map<String, dynamic>> roleTypes = [
+      {'id': 1, 'name': 'Admin'},
+      {'id': 2, 'name': 'Captain'},
+      {'id': 4, 'name': 'Carebuddy'},
+    ];
+    int? roleId;
+    late DateTime startOfWeek;
+    late DateTime endOfWeek;
+
 
 
     Color getButtonColor(bool isPressed) =>
@@ -62,12 +72,13 @@ import 'create_new_interaction_new.dart';
       if (isTodayButtonPressed) {
         print('empty 1');
         interactionMembers = [];
-        await fetchInteractionData(null, null, null, null, null, null);
+        await fetchInteractionData(null, null, null, null, null, null,null);
       } else {
         print('today');
         interactionMembers = [];
-        DateTime today = DateTime.now();
-        await fetchInteractionData(today, today, null, null, null, null);
+        today = DateTime.now();
+        page = 1;
+        await fetchInteractionData(today, today, null, page, null, null,roleId);
       }
       updateButtonStates(today: !isTodayButtonPressed, week: false, filter: false);
     }
@@ -76,13 +87,16 @@ import 'create_new_interaction_new.dart';
       if (isWeekButtonPressed) {
         print('empty 2');
         interactionMembers = [];
-        await fetchInteractionData(null, null, null, null, null, null);
+        await fetchInteractionData(null, null, null, null, null, null,roleId);
       } else {
         interactionMembers = [];
         print('week');
-        DateTime startOfWeek = DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
-        DateTime endOfWeek = startOfWeek.add(const Duration(days: 6));
-        await fetchInteractionData(startOfWeek, endOfWeek, null, null, null, null);
+         startOfWeek = DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
+         endOfWeek = startOfWeek.add(const Duration(days: 6));
+        print(startOfWeek);
+        print(endOfWeek);
+        page = 1;
+        await fetchInteractionData(startOfWeek, endOfWeek, null, page, null, null,roleId);
       }
       updateButtonStates(today: false, week: !isWeekButtonPressed, filter: false);
     }
@@ -155,15 +169,15 @@ import 'create_new_interaction_new.dart';
                                           },
                                           tileColor: selectedTileIndex == 0 ? const Color(0xfff1f9ff) : null,
                                         ),
-                                        // ListTile(
-                                        //   title:  Text('Due Date',style: TextStyle(color: selectedTileIndex == 1 ?  const Color(0xff006bbf) : null)),
-                                        //   onTap: () {
-                                        //     setState(() {
-                                        //       selectedTileIndex = 1;
-                                        //     });
-                                        //   },
-                                        //   tileColor: selectedTileIndex == 1 ? const Color(0xfff1f9ff) : null,
-                                        // ),
+                                        ListTile(
+                                          title:  Text('Role',style: TextStyle(color: selectedTileIndex == 3 ?  const Color(0xff006bbf) : null)),
+                                          onTap: () {
+                                            setState(() {
+                                              selectedTileIndex = 3;
+                                            });
+                                          },
+                                          tileColor: selectedTileIndex == 3 ? const Color(0xfff1f9ff) : null,
+                                        ),
                                         ListTile(
                                           title:  Text('Members',style: TextStyle(color: selectedTileIndex == 2 ?  const Color(0xff006bbf) : null)),
                                           onTap: () {
@@ -186,7 +200,33 @@ import 'create_new_interaction_new.dart';
                                 flex: 3,
                                 child: SizedBox(
                                   height: ScreenUtil().screenHeight * 0.75 - 120.0.h,
-                                  child: Column(
+                                  child: selectedTileIndex == 3
+                                      ?ListView.builder(
+                                    physics: const BouncingScrollPhysics(),
+                                    itemCount: roleTypes.length,
+                                    itemBuilder: (BuildContext context, int index) {
+                                      return ListTile(
+                                        title: Text(roleTypes[index]['name'] as String),
+                                        tileColor: roleId == roleTypes[index]['id'] ? const Color(0xfff1f9ff) : null,
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: roleId == roleTypes[index]['id']
+                                              ? BorderRadius.circular(10.0) // Adjust the border radius as needed
+                                              : BorderRadius.circular(0.0), // No border radius for unselected tiles
+                                          side: roleId == roleTypes[index]['id']
+                                              ? const BorderSide(color: Colors.blue, width: 1.0) // Border color and width for selected tile
+                                              : BorderSide.none, // No border for unselected tiles
+                                        ),
+                                        onTap: () {
+                                          setState(() {
+                                            roleId = roleTypes[index]['id'] as int?;
+                                            print(roleId);
+                                          });
+                                        },
+                                      );
+                                    },
+                                  )
+
+                                  : Column(
                                     children: [
                                       Visibility(
                                         visible: selectedTileIndex == 1, // Only show if selectedTileIndex is 1
@@ -296,6 +336,7 @@ import 'create_new_interaction_new.dart';
                                       setState(() {
                                         selectedStatusIds.clear();
                                         selectedMemberIds.clear(); // Clear the selected IDs list
+                                        getRoleIdFromLocal();
                                         print('clearedStatus - $selectedStatusIds');
                                         print('clearedMemberIds - $selectedMemberIds');
                                       });
@@ -311,7 +352,8 @@ import 'create_new_interaction_new.dart';
                                     onPressed: () async {
                                       print('apply');
                                       interactionMembers = [];
-                                      await fetchInteractionData(null, null, null, null, selectedStatusIds, selectedMemberIds);
+                                      page = 1;
+                                      await fetchInteractionData(null, null, null, page, selectedStatusIds, selectedMemberIds,roleId);
                                       Navigator.pop(context); // Close the bottom sheet
                                       // Handle apply button press
                                     },
@@ -358,7 +400,8 @@ import 'create_new_interaction_new.dart';
     @override
     void initState() {
       super.initState();
-      fetchInteractionData(null, null, null, null, null, null);
+      getRoleIdFromLocal();
+      fetchInteractionData(null, null, null, null, null, null,null);
       fetchMemberNames();
       fetchInteractionStatusTypes(); // Fetch task status types when the screen initializes
       scrollController.addListener(_scrollListener);
@@ -375,11 +418,17 @@ import 'create_new_interaction_new.dart';
       print('memberMap  -- $memberMap');
     }
 
+    getRoleIdFromLocal() async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      roleId = prefs.getInt('roleId');
+      print('roleID from local - $roleId');
+    }
+
     String formatDate(DateTime date) {
       return DateFormat('yyyy-MM-dd').format(date);
     }
 
-    Future<void> fetchInteractionData(from, to, carebuddy, pageNo, statusList, membersList) async {
+    Future<void> fetchInteractionData(from, to, carebuddy, pageNo, statusList, membersList,roleId) async {
       var formattedFrom = null, formattedTo= null;
       // ignore: prefer_typing_uninitialized_variables
       var formattedMember, formattedStatus;
@@ -396,10 +445,10 @@ import 'create_new_interaction_new.dart';
       }
 
 
-      List<dynamic>? fetchedData = await InteractionApi().fetchInteractionDataTypes(formattedFrom,formattedTo, null, pageNo,formattedStatus , formattedMember);
+      List<dynamic>? fetchedData = await InteractionApi().fetchInteractionDataTypes(formattedFrom,formattedTo, null, pageNo,formattedStatus , formattedMember,roleId);
       setState(() {
         interactionMembers = [...interactionMembers, ...fetchedData!]; // Concatenate the new data
-        print('PAGE NO $pageNo - interacionMembers $interactionMembers');
+        print('PAGE NO $pageNo - interactionMembers $interactionMembers');
         print('newInteraction - $fetchedData');
         fetchedLen = fetchedData.length;
         print('fetchedLen - $fetchedLen');
@@ -528,11 +577,11 @@ import 'create_new_interaction_new.dart';
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(32.0.r),
                         ),
-                        backgroundColor: getButtonColor(isFilterButtonPressed),
+                        backgroundColor: Colors.transparent,
                       ),
-                      child: Text(
+                      child: const Text(
                         'FILTER',
-                        style: TextStyle(color: getButtonTextColor(isFilterButtonPressed)),
+                        style: TextStyle(color:Color(0xff6b7280)),
                       ),),
                   ),
                 ],
@@ -616,11 +665,27 @@ import 'create_new_interaction_new.dart';
           isLoading = true; // Set loading state to true
         });
         page = page + 1;
-        fetchInteractionData(null, null, null, page, null, null).then((_) {
-          setState(() {
-            isLoading = false; // Set loading state to false after data is loaded
+        if(isTodayButtonPressed) {
+          fetchInteractionData(today, today, null, page, selectedStatusIds, selectedMemberIds,roleId).then((_) {
+            setState(() {
+              isLoading = false; // Set loading state to false after data is loaded
+            });
           });
-        });
+        }
+        else if(isWeekButtonPressed) {
+          fetchInteractionData(startOfWeek, endOfWeek, null, page, selectedStatusIds, selectedMemberIds,roleId).then((_) {
+            setState(() {
+              isLoading = false; // Set loading state to false after data is loaded
+            });
+          });
+        }
+        else {
+          fetchInteractionData(null, null, null, page, selectedStatusIds, selectedMemberIds,roleId).then((_) {
+            setState(() {
+              isLoading = false; // Set loading state to false after data is loaded
+            });
+          });
+        }
       }
     }
 
@@ -634,8 +699,13 @@ import 'create_new_interaction_new.dart';
       );
       if(shouldUpdate == true) {
         interactionMembers = [];
+        selectedStatusIds.clear();
+        selectedMemberIds.clear(); // Clear the selected IDs list
+        getRoleIdFromLocal();
+        isTodayButtonPressed = false;
+        isWeekButtonPressed = false;
         print('updated on reload');
-        fetchInteractionData(null, null, null, null, null, null);
+        fetchInteractionData(null, null, null, null, null, null, null);
       }
     }
 
@@ -648,12 +718,12 @@ import 'create_new_interaction_new.dart';
       if (shouldCreate == true) {
         // Refresh the task data after updating
         interactionMembers = [];
-        fetchInteractionData(null, null, null, null, null, null);
+        fetchInteractionData(null, null, null, null, null, null, null);
       }
       if (shouldCreate == false) {
         // Refresh the task data after updating
         interactionMembers = [];
-        fetchInteractionData(null, null, null, null, null, null);
+        fetchInteractionData(null, null, null, null, null, null, null);
       }
     }
   }

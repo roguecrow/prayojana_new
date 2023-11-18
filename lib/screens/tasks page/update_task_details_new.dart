@@ -273,6 +273,11 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
             .where((name) => name != null)
             .map((name) => name!)
             .toList();
+
+        if (taskMembers.isNotEmpty) {
+          memberId = taskMembers[0]['member_id'];
+          print('memberID - $memberId');
+        }
       });
     }
 
@@ -314,11 +319,14 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
     if (_dueDateController.text.isNotEmpty) {
       initialDate = DateFormat('dd MMM yyyy').parse(_dueDateController.text);
     }
+    if (initialDate.isBefore(DateTime.now())) {
+      initialDate = DateTime.now();
+    }
 
     final DateTime? picked = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: initialDate,
+      firstDate: DateTime.now(),
       lastDate: DateTime(2101),
     );
 
@@ -661,7 +669,7 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
       String accessToken = await getFirebaseAccessToken();
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/50?image'),
+        Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/$memberId?image'),
       );
       request.files.add(await http.MultipartFile.fromPath(
         'image', filePath,
