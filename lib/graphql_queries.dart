@@ -300,6 +300,26 @@ mutation UpdateInteractionAttachments(
 }
 ''';
 
+const String updateUserProfilePhoto = r'''
+mutation MyMutation($user_id: Int! ,$url: String!) {
+  update_people(
+    where: { user_id: { _eq: $user_id } }, 
+    _set: { profile_photo: $url }
+  ) {
+    affected_rows
+    returning {
+      id
+      user_id
+      user {
+        name
+      }
+      profile_photo
+    }
+  }
+}
+
+''';
+
 const String updateTaskAttachmentsQuery = r'''
   mutation UpdateTaskAttachments(
     $taskId: Int!,
@@ -1339,6 +1359,7 @@ query MyQuery(\$userId: Int!) {
 }
 ''';
 }
+
 
 
 

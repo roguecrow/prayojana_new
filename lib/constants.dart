@@ -48,6 +48,12 @@ class ApiConstants {
       ? 'https://prayojana-api-staging.slashdr.com/rest/filter/city'
       : 'https://prayojana-api-v1.slashdr.com/rest/filter/city';
 
+  static String awsUrl(memberId) {
+    return kProfileMode
+        ? 'https://prayojana-api-staging.slashdr.com/rest/files/upload/member/$memberId?image'
+        : 'https://prayojana-api-v1.slashdr.com/rest/files/upload/member/$memberId?image';
+  }
+
   static const String contentType = 'application/json';
   static const String hasuraConsoleClientName = 'hasura-console';
   static const String adminSecret = 'myadminsecret';

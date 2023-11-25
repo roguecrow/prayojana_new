@@ -455,15 +455,15 @@ class _TaskScreenState extends State<TaskScreen> {
       appBar: AppBar(
         backgroundColor: const Color(0xff006bbf),
         title: const Text('Tasks'),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.search,
-              color: Colors.white,
-            ),
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     onPressed: () {},
+        //     icon: const Icon(
+        //       Icons.search,
+        //       color: Colors.white,
+        //     ),
+        //   ),
+        // ],
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
             bottomLeft: Radius.circular(5),
@@ -535,7 +535,12 @@ class _TaskScreenState extends State<TaskScreen> {
             child: _taskData == null
                 ? const Center(child: CircularProgressIndicator())
                 : _taskData!.isEmpty
-                ? const Center(child: Text('No data to show.'))
+                ?  Center(child: Text('No data to show.',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.bold,
+              ),
+            ))
                 : ListView.separated(
               controller: scrollController ,
               physics: const BouncingScrollPhysics(),

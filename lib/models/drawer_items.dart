@@ -3,12 +3,15 @@ import 'dart:convert';
 import 'package:floor/floor.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:http/http.dart'as http;
 import 'package:prayojana_new/about.dart';
+import 'package:prayojana_new/graphql_queries.dart';
 import 'package:prayojana_new/screens/auth%20Page/auth_screen.dart';
 import 'package:prayojana_new/screens/user_profile/user_profile.dart';
 import 'package:prayojana_new/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../constants.dart';
 import '../floor/database.dart';
 
 
@@ -32,34 +35,90 @@ class _AppDrawerState extends State<AppDrawer> {
   String? name;
   String? phone;
   String? firstName;
-  Map<String, dynamic> userDetails = {};
+  String? profile;
+  int? userId;
+  List<dynamic> userDetails = [];
 
   @override
   void initState() {
     super.initState();
-    loadUserDetails();
+    loadUserData();
   }
 
-
-  void loadUserDetails() async {
+  void loadUserData() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? loginUserDetails = prefs.getString('loginUserDetails');
+    userId = prefs.getInt('userId')!;
+    print(userId);
 
-    if (loginUserDetails != null) {
-      userDetails = json.decode(loginUserDetails);
-      setState(() {
-        name = userDetails['data']['name'];
-        phone = userDetails['data']['mobile_number'];
+    try {
+      String accessToken = await getFirebaseAccessToken();
 
-        // Split the full name and take the first part
-        List<String> nameParts = name!.split(' ');
-        if (nameParts.isNotEmpty) {
-          firstName = nameParts[0];
-          print(firstName);
-        }
-      });
+      final http.Response response = await http.post(
+        Uri.parse(ApiConstants.graphqlUrl),
+        headers: {
+          'Content-Type': ApiConstants.contentType,
+          'Hasura-Client-Name': ApiConstants.hasuraConsoleClientName,
+          'x-hasura-admin-secret': ApiConstants.adminSecret,
+          'Authorization': 'Bearer $accessToken',
+        },
+        body: jsonEncode({
+          'query': getUserProfile(userId!), // Use the updateUserProfile function
+          'variables': {'userId': userId},
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        print(response.body);
+        final data = json.decode(response.body);
+        setState(() {
+          userDetails = List<Map<String, dynamic>>.from(data['data']['users']);
+          if (userDetails.isNotEmpty) {
+             name = userDetails[0]['name'];
+             phone = userDetails[0]['mobile_number'];
+             profile = userDetails[0]['people'][0]['profile_photo'];
+
+             List<String> nameParts = name!.split(' ');
+             if (nameParts.isNotEmpty) {
+               firstName = nameParts[0];
+               print(firstName);
+               print('profilePic = $profile');
+             }
+          }
+
+        });
+        print('userDetails - $userDetails');
+        print(profile);
+      } else {
+        print('API Error: ${response.reasonPhrase}');
+      }
+    } catch (error) {
+      print('Error fetching user details: $error');
     }
   }
+
+
+  // void loadUserDetails() async {
+  //   SharedPreferences prefs = await SharedPreferences.getInstance();
+  //   String? loginUserDetails = prefs.getString('loginUserDetails');
+  //
+  //   if (loginUserDetails != null) {
+  //     userDetails = json.decode(loginUserDetails);
+  //     print(userDetails);
+  //     setState(() {
+  //       name = userDetails['data']['name'];
+  //       phone = userDetails['data']['mobile_number'];
+  //       profile = userDetails['data']['profile_photo'];
+  //
+  //       // Split the full name and take the first part
+  //       List<String> nameParts = name!.split(' ');
+  //       if (nameParts.isNotEmpty) {
+  //         firstName = nameParts[0];
+  //         print(firstName);
+  //         print('profilePic = $profile');
+  //       }
+  //     });
+  //   }
+  // }
 
  Future<void> logOutFCMToken() async {
    SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -124,7 +183,7 @@ class _AppDrawerState extends State<AppDrawer> {
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => ProfilePage(userDetails: userDetails),
+              builder: (context) => ProfilePage(userDetails: {}),
             ),
           );
         },
@@ -168,8 +227,18 @@ class _AppDrawerState extends State<AppDrawer> {
                 children: [
                   Container(
                     margin: EdgeInsets.only(bottom: 8.h),
-                    height: 50.h,
-                    child: Icon(Icons.person, size: 50.h, color: Colors.white) // Show profile icon if no image
+                    height: 70.h,
+                    child: profile != null &&
+                        profile != ''
+                        ? CircleAvatar(
+                      radius: 45.r,
+                      backgroundImage: NetworkImage(profile!),
+                    )
+                        :  CircleAvatar(
+                      radius: 45.r,
+                      backgroundColor: Colors.grey,
+                      child:  Icon(Icons.person, size: 40.sp, color: Colors.white), // Change the background color as needed
+                    ),
                   ),
                   Text(
                     firstName ?? '',

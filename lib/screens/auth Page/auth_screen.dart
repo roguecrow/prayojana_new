@@ -342,8 +342,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           child: ElevatedButton(
                             onPressed: isVerifyingOTP
                                 ? null
-                                : () {
+                                : () async {
                               if (screenState == 0) {
+
+                                setState(() {
+                                  isVerifyingOTP = true; // Show loader immediately
+                                });
+                                await Future.delayed(const Duration(seconds: 5)); // Delay for 5 seconds
+                                setState(() {
+                                  isVerifyingOTP = false; // Hide loader after 5 seconds
+                                });
                                 if (phoneController.text.isEmpty) {
                                   //showSnackBarText("Phone number is still empty!");
                                   showCustomTopSnackbar(context, "Phone number is still empty!");
@@ -351,7 +359,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                   if (countryDial == "+1") {
                                     //showSnackBarText("Please select a country code.");
                                     showCustomTopSnackbar(context, "Please select a country code.");
-
                                     return;
                                   } else {
                                     registerUserAndVerifyPhone();

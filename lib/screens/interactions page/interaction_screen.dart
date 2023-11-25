@@ -406,7 +406,7 @@ import 'create_new_interaction_new.dart';
       fetchInteractionStatusTypes(); // Fetch task status types when the screen initializes
       scrollController.addListener(_scrollListener);
     }
-    List<dynamic> interactionMembers = [];
+    List<dynamic>? interactionMembers;
 
 
     void fetchMemberNames() async {
@@ -447,7 +447,7 @@ import 'create_new_interaction_new.dart';
 
       List<dynamic>? fetchedData = await InteractionApi().fetchInteractionDataTypes(formattedFrom,formattedTo, null, pageNo,formattedStatus , formattedMember,roleId);
       setState(() {
-        interactionMembers = [...interactionMembers, ...fetchedData!]; // Concatenate the new data
+        interactionMembers = [...?interactionMembers, ...fetchedData!]; // Concatenate the new data
         print('PAGE NO $pageNo - interactionMembers $interactionMembers');
         print('newInteraction - $fetchedData');
         fetchedLen = fetchedData.length;
@@ -511,15 +511,15 @@ import 'create_new_interaction_new.dart';
         appBar: AppBar(
           backgroundColor: const Color(0xff006bbf),
           title: const Text('Interactions'),
-          actions: [
-            IconButton(
-              onPressed: () {},
-              icon: const Icon(
-                Icons.search,
-                color: Colors.white,
-              ),
-            ),
-          ],
+          // actions: [
+          //   IconButton(
+          //     onPressed: () {},
+          //     icon: const Icon(
+          //       Icons.search,
+          //       color: Colors.white,
+          //     ),
+          //   ),
+          // ],
           shape: const RoundedRectangleBorder(
             borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(5),
@@ -590,11 +590,16 @@ import 'create_new_interaction_new.dart';
             Expanded(
               child: interactionMembers == null
                   ? const Center(child: CircularProgressIndicator())
-                  : interactionMembers.isEmpty
-                  ? const Center(child: Text('No data to show.'))
+                  : interactionMembers!.isEmpty
+                  ?  Center(child: Text('No data to show.',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ))
                   : ListView.separated(
                 controller: scrollController ,
-                itemCount: interactionMembers.length,
+                itemCount: interactionMembers!.length,
                 separatorBuilder: (context, index) => const Divider(
                   endIndent: 20,
                   indent: 20,
@@ -603,7 +608,7 @@ import 'create_new_interaction_new.dart';
                 ),
 
                 itemBuilder: (context, index) {
-                  final interactionMember = interactionMembers[index];
+                  final interactionMember = interactionMembers?[index];
                   final interaction = interactionMember;
                   int interactionId = interactionMember['id'];
                   final title = interactionMember['title'];

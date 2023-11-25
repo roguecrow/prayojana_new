@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:prayojana_new/main.dart';
 import 'package:prayojana_new/screens/dashboard%20page/dashboard_screen.dart';
 import 'package:prayojana_new/screens/notification%20page/push_notification_screen.dart';
@@ -84,6 +85,19 @@ class FirebaseApi{
       provisional: false,
       sound: true,
     );
+
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      'high_importance_channel', // id
+      'High Importance Notifications', // title
+      importance: Importance.max,
+    );
+
+    final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+
+    await flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
 
     print('User granted permission: ${settings.authorizationStatus}');
     FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(

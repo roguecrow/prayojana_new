@@ -524,15 +524,15 @@ class _MemberScreenState extends State<MemberScreen> {
       appBar: AppBar(
         title: const Text('Members'),
         backgroundColor: const Color(0xff006bbf),
-        actions: [
-          IconButton(
-            onPressed: () {},
-            icon: const Icon(
-              Icons.search,
-              color: Colors.white,
-            ),
-          ),
-        ],
+        // actions: [
+        //   IconButton(
+        //     onPressed: () {},
+        //     icon: const Icon(
+        //       Icons.search,
+        //       color: Colors.white,
+        //     ),
+        //   ),
+        // ],
         shadowColor: const Color(0xff006bbf),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.only(
@@ -570,6 +570,16 @@ class _MemberScreenState extends State<MemberScreen> {
           Expanded(
             child: _membersData == null
                 ? const Center(child: CircularProgressIndicator())
+                : _membersData!.isEmpty
+                ? Center(
+              child: Text(
+                'There are no members.',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
                 : ListView.builder(
               controller: scrollController ,
               itemCount: _membersData!.length,

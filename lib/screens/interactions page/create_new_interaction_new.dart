@@ -10,6 +10,7 @@ import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:http/http.dart'as http;
+import 'package:prayojana_new/models/attachment_done_bar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../constants.dart';
 import '../../graphql_queries.dart';
@@ -133,7 +134,8 @@ class _CreateInteractionNewState extends State<CreateInteractionNew> {
       String accessToken = await getFirebaseAccessToken();
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/${_selectedMember!.id}?image'),
+        //Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/${_selectedMember!.id}?image'),
+        Uri.parse(ApiConstants.awsUrl(_selectedMember!.id)),
       );
       request.files.add(await http.MultipartFile.fromPath(
           'image', filePath,
@@ -160,146 +162,220 @@ class _CreateInteractionNewState extends State<CreateInteractionNew> {
       }
     } catch (error) {
       print('Error uploading file: $error');
+      showCustomTopSnackbar(context, "No Member selected !");
     }
+  }
+
+  void showCustomTopSnackbar(BuildContext context, String message) {
+    final overlay = Overlay.of(context);
+    OverlayEntry overlayEntry;
+
+    overlayEntry = OverlayEntry(
+      builder: (context) => Positioned(
+        bottom: MediaQuery.of(context).padding.top + 16.0.h, // Adjust the top padding as needed
+        left: 16.0.w,
+        right: 16.0.w,
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 8.0.w, vertical: 6.0.h),
+            decoration: BoxDecoration(
+              color:  Colors.black45 ,
+              borderRadius: BorderRadius.circular(8.0.r),
+            ),
+            child: Center(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16.0.sp,
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    overlay.insert(overlayEntry);
+
+    Future.delayed(const Duration(seconds: 3), () {
+      overlayEntry.remove();
+    });
   }
 
 
 
 
 
-
   Future<void> _showAttachmentDialog(BuildContext context) async {
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(20.r),
+        ),
+      ),
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              title: const Text('Add Attachment'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (pickedFile != null && pickedFile!.path.endsWith('.jpg')) // Check if the picked file is an image
-                      Column(
-                        children: [
-                          pickedFile != null
-                              ? Image.file(
-                            pickedFile!,
-                            width: 300.w,
-                            height: 300.h,
-                          )
-                              : fileUrl != null
-                              ? Image.network(
-                            fileUrl,
-                            width: 300.w,
-                            height: 300.h,
-                          )
-                              : const SizedBox.shrink(),
-                          SizedBox(height: 10.h),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  pickedFileName ?? '',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(16.h),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Add Attachment',
+                          style: TextStyle(
+                            fontSize: 30.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        Divider(
+                          height: 20.0.h,
+                          thickness: 1,
+                        ),
+                        // if (fileUrl != null && fileUrl != 'null')
+                        Column(
+                          children: [
+                            pickedFile != null
+                                ? Image.file(
+                              pickedFile!,
+                              width: 300.w,
+                              height: 300.h,
+                            )
+                                : fileUrl != null && fileUrl != 'null'
+                                ? Image.network(
+                              fileUrl,
+                              width: 300.w,
+                              height: 300.h,
+                              loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                                if (loadingProgress == null) {
+                                  return child;
+                                } else {
+                                  return const CircularProgressIndicator();
+                                }
+                              },
+                            )
+                                : const SizedBox.shrink(),
+                            SizedBox(height: 10.h),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Center(
+                                    child: Text(
+                                      pickedFileName == null ? fileNameController.text : pickedFileName!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
                                 ),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    pickedFile = null;
-                                    pickedFileName = null;
-                                    fileNameController.clear();
-                                  });
-                                },
-                                icon: const Icon(Icons.delete),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    if (pickedFile != null && !pickedFile!.path.endsWith('.jpg')) // Check if the picked file is not an image
-                      Column(
-                        children: [
-                          Text(
-                            pickedFileName ?? '',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          SizedBox(height: 10.h),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'File type: ${pickedFile?.path.split('.').last}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                                // IconButton(
+                                //   onPressed: () {
+                                //     setState(() {
+                                //       pickedFile = null;
+                                //       pickedFileName = null;
+                                //       fileNameController.clear();
+                                //     });
+                                //   },
+                                //   icon: const Icon(Icons.delete),
+                                // ),
+                              ],
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 10.h,),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Column(
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(); // Close the bottom sheet
+                                  },
+                                  icon: const Icon(Icons.cancel),
+                                  iconSize: 30.sp,
+                                  color: Colors.red, // Customize the color as needed
                                 ),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    pickedFile = null;
-                                    pickedFileName = null;
-                                    fileNameController.clear();
-                                  });
-                                },
-                                icon: const Icon(Icons.delete),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-              actions: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(); // Close the dialog
-                      },
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        pickedFile = await pickImageFromCamera();
-                        pickedFileName = pickedFile?.path.split('/').last;
-                        String? trimmedText = pickedFileName!.length <= 20
-                            ? pickedFileName
-                            : pickedFileName?.substring(0, 20);
-                        String? fileType = pickedFile?.path.split('.').last;
+                                Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                IconButton(
+                                  onPressed: () async {
+                                    pickedFile = await pickImageFromCamera();
+                                    pickedFileName = pickedFile?.path.split('/').last;
+                                    String? trimmedText = pickedFileName!.length <= 20
+                                        ? pickedFileName
+                                        : pickedFileName?.substring(0, 20);
+                                    fileType = pickedFile?.path.split('.').last;
 
-                        setState(() {
-                          fileNameController.text = '$trimmedText.$fileType';
-                        });
-                        Navigator.of(context).pop(); // Close the dialog
-                      },
-                      child: const Text('Camera'),
+                                    setState(() {
+                                      fileNameController.text = '$trimmedText.$fileType';
+                                    });
+                                    Navigator.of(context).pop(); // Close the bottom sheet
+                                  },
+                                  icon: const Icon(Icons.camera_alt),
+                                  iconSize: 30.sp,
+                                  color: Colors.blue, // Customize the color as needed
+                                ),
+                                Text(
+                                  'Camera',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                IconButton(
+                                  onPressed: () async {
+                                    pickedFile = await pickFile();
+                                    pickedFileName = pickedFile?.path.split('/').last;
+                                    fileType = pickedFile?.path.split('.').last;
+                                    String? trimmedText = pickedFileName!.length <= 20
+                                        ? pickedFileName
+                                        : pickedFileName?.substring(0, 20);
+                                    if (_isMounted) {
+                                      setState(() {
+                                        fileNameController.text = '$trimmedText.$fileType';
+                                      });
+                                    }
+                                    Navigator.of(context).pop(); // Close the bottom sheet
+                                  },
+                                  icon: const Icon(Icons.add),
+                                  iconSize: 30.sp,
+                                  color: Colors.green, // Customize the color as needed
+                                ),
+                                Text(
+                                  'Add',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    TextButton(
-                      onPressed: () async {
-                        pickedFile = await pickFile();
-                        pickedFileName = pickedFile?.path.split('/').last;
-                        fileType = pickedFile?.path.split('.').last;
-                        String? trimmedText = pickedFileName!.length <= 20
-                            ? pickedFileName
-                            : pickedFileName?.substring(0, 20);
-
-                        if (_isMounted) {
-                          setState(() {
-                            fileNameController.text = '$trimmedText.$fileType';
-                          });
-                        }
-                        Navigator.of(context).pop(); // Close the dialog
-                      },
-                      child: const Text('Add'),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             );
@@ -833,24 +909,26 @@ class _CreateInteractionNewState extends State<CreateInteractionNew> {
                     _showAttachmentDialog(context);
                   },
                   decoration: InputDecoration(
-                      labelText: 'Add an Attachment',
-                      enabledBorder: const UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey),
-                      ),
-                      focusedBorder: const UnderlineInputBorder(
-                        borderSide: BorderSide(color: Colors.grey),
-                      ),
-                      suffixIcon: IconButton(
-                        icon:const Icon(Icons.add),
-                        color: const Color(0xff999999),
-                        onPressed: () {
-
+                    labelText: 'Add an Attachment',
+                    labelStyle: TextStyle(color: Colors.blue),
+                    //hintText: 'Click Here',
+                    enabledBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    focusedBorder: const UnderlineInputBorder(
+                      borderSide: BorderSide(color: Colors.grey),
+                    ),
+                    suffixIcon:  IconButton(
+                      icon: const Icon(Icons.add_circle),
+                      color: Colors.blue,
+                      onPressed: () {
+                        if(pickedFile!=null) {
                           print('on pressed - $pickedFile');
                           var filepath = pickedFile!.path;
-                          // print('pickedFile path - $filepath');
-                          uploadFile(pickedFileName! , pickedFile!.path);
-                        },
-                      )
+                          uploadFile(pickedFileName!, pickedFile!.path);
+                        }
+                      },
+                    )
                   ),
                 ),
                 'assets/icons/Paper clip.png',

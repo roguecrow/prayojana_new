@@ -11,6 +11,7 @@ import 'package:intl/intl.dart';
 import 'package:loading_indicator/loading_indicator.dart';
 import '../../constants.dart';
 import '../../graphql_queries.dart';
+import '../../models/attachment_done_bar.dart';
 import '../../models/summaries_chat.dart';
 import '../../services/api_service.dart';
 import 'package:file_picker/file_picker.dart';
@@ -83,11 +84,19 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
       List<dynamic> attachments = selectedInteractionMember['interaction']['interaction_attachements'];
       if (attachments.isNotEmpty) {
         String url = attachments[0]['url'];
+        fileUrl = url;
+        print('fileUrl - $fileUrl');
+
         List<String> parts = url.split('/');
-        String fileName = parts.last;
-        print(fileName);
-        fileNameController.text = fileName;
+        String fileName = url == 'null' ? '' : parts.last;
+
+        // Get the last 20 characters from the right side
+        String last20Chars = fileName.length <= 25 ? fileName : fileName.substring(fileName.length - 25);
+
+        print(last20Chars);
+        fileNameController.text = last20Chars;
       }
+
 
       print('selectedInteractionMember - $selectedInteractionMember');
       _fetchMemberName();
@@ -189,6 +198,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
       if (response.statusCode == 200) {
         print('Attachment Updated Successfully');
         print('Response Body: ${response.body}');
+        showCustomAttachmentAddedBar(context, "Added");
       } else {
         print('API Error: ${response.reasonPhrase}');
       }
@@ -199,140 +209,177 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
 
 
 
-
-
   Future<void> _showAttachmentDialog(BuildContext context) async {
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(20.r),
+        ),
+      ),
       builder: (BuildContext context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
-            return AlertDialog(
-              title: const Text('Add Attachment'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (pickedFile != null && pickedFile!.path.endsWith('.jpg')) // Check if the picked file is an image
-                      Column(
-                        children: [
-                          pickedFile != null
-                              ? Image.file(
-                            pickedFile!,
-                            width: 300.w,
-                            height: 300.h,
-                          )
-                              : fileUrl != null
-                              ? Image.network(
-                            fileUrl,
-                            width: 300.w,
-                            height: 300.h,
-                          )
-                              : SizedBox.shrink(),
-                          SizedBox(height: 10.h),
-                          Row(
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(16.h),
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                         Text(
+                          'Add Attachment',
+                          style: TextStyle(
+                            fontSize: 30.sp,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                        Divider(
+                          height: 20.0.h,
+                          thickness: 1,
+                        ),
+                       // if (fileUrl != null && fileUrl != 'null')
+                          Column(
                             children: [
-                              Expanded(
-                                child: Text(
-                                  pickedFileName ?? '',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    pickedFile = null;
-                                    pickedFileName = null;
-                                    fileNameController.clear();
-                                  });
+                              pickedFile != null
+                                  ? Image.file(
+                                pickedFile!,
+                                width: 300.w,
+                                height: 300.h,
+                              )
+                                  : fileUrl != null && fileUrl != 'null'
+                                  ? Image.network(
+                                fileUrl,
+                                width: 300.w,
+                                height: 300.h,
+                                loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
+                                  if (loadingProgress == null) {
+                                    return child;
+                                  } else {
+                                    return CircularProgressIndicator();
+                                  }
                                 },
-                                icon: const Icon(Icons.delete),
+                              )
+                                  : const SizedBox.shrink(),
+                              SizedBox(height: 10.h),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Center(
+                                      child: Text(
+                                        pickedFileName == null ? fileNameController.text : pickedFileName!,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ),
+                                  // IconButton(
+                                  //   onPressed: () {
+                                  //     setState(() {
+                                  //       pickedFile = null;
+                                  //       pickedFileName = null;
+                                  //       fileNameController.clear();
+                                  //     });
+                                  //   },
+                                  //   icon: const Icon(Icons.delete),
+                                  // ),
+                                ],
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                    if (pickedFile != null && !pickedFile!.path.endsWith('.jpg')) // Check if the picked file is not an image
-                      Column(
-                        children: [
-                          Text(
-                            pickedFileName ?? '',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          SizedBox(height: 10.h),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'File type: ${pickedFile?.path.split('.').last}',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
+                        SizedBox(height: 10.h,),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            Column(
+                              children: [
+                                IconButton(
+                                  onPressed: () {
+                                    Navigator.of(context).pop(); // Close the bottom sheet
+                                  },
+                                  icon: const Icon(Icons.cancel),
+                                  iconSize: 30.sp,
+                                  color: Colors.red, // Customize the color as needed
                                 ),
-                              ),
-                              IconButton(
-                                onPressed: () {
-                                  setState(() {
-                                    pickedFile = null;
-                                    pickedFileName = null;
-                                    fileNameController.clear();
-                                  });
-                                },
-                                icon: const Icon(Icons.delete),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
-              ),
-              actions: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    TextButton(
-                      onPressed: () {
-                        Navigator.of(context).pop(); // Close the dialog
-                      },
-                      child: const Text('Cancel'),
-                    ),
-                    TextButton(
-                      onPressed: () async {
-                        pickedFile = await pickImageFromCamera();
-                        pickedFileName = pickedFile?.path.split('/').last;
-                        String? trimmedText = pickedFileName!.length <= 20
-                            ? pickedFileName
-                            : pickedFileName?.substring(0, 20);
-                        String? fileType = pickedFile?.path.split('.').last;
+                                Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                IconButton(
+                                  onPressed: () async {
+                                    pickedFile = await pickImageFromCamera();
+                                    print('pickedFile - $pickedFile');
+                                    if (pickedFile != null) {
+                                      pickedFileName = pickedFile?.path.split('/').last;
+                                      fileType = pickedFile?.path.split('.').last;
+                                      String? trimmedText = pickedFileName!.length <= 20
+                                          ? pickedFileName
+                                          : pickedFileName?.substring(0, 20);
 
-                        setState(() {
-                          fileNameController.text = '$trimmedText.$fileType';
-                        });
-                        Navigator.of(context).pop(); // Close the dialog
-                      },
-                      child: const Text('Camera'),
+                                      setState(() {
+                                        fileNameController.text = '$trimmedText.$fileType';
+                                      });
+                                    }
+                                    Navigator.of(context).pop(); // Close the bottom sheet
+                                  },
+                                  icon: const Icon(Icons.camera_alt),
+                                  iconSize: 30.sp,
+                                  color: Colors.blue, // Customize the color as needed
+                                ),
+                                Text(
+                                  'Camera',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Column(
+                              children: [
+                                IconButton(
+                                  onPressed: () async {
+                                    pickedFile = await pickFile();
+                                    pickedFileName = pickedFile?.path.split('/').last;
+                                    fileType = pickedFile?.path.split('.').last;
+                                    String? trimmedText = pickedFileName!.length <= 20
+                                        ? pickedFileName
+                                        : pickedFileName?.substring(0, 20);
+                                    if (_isMounted) {
+                                      setState(() {
+                                        fileNameController.text = '$trimmedText.$fileType';
+                                      });
+                                    }
+                                    Navigator.of(context).pop(); // Close the bottom sheet
+                                  },
+                                  icon: const Icon(Icons.add),
+                                  iconSize: 30.sp,
+                                  color: Colors.green, // Customize the color as needed
+                                ),
+                                Text(
+                                  'Add',
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    TextButton(
-                      onPressed: () async {
-                        pickedFile = await pickFile();
-                        pickedFileName = pickedFile?.path.split('/').last;
-                        fileType = pickedFile?.path.split('.').last;
-                        String? trimmedText = pickedFileName!.length <= 20
-                            ? pickedFileName
-                            : pickedFileName?.substring(0, 20);
-
-                        if (_isMounted) {
-                          setState(() {
-                            fileNameController.text = '$trimmedText.$fileType';
-                          });
-                        }
-                        Navigator.of(context).pop(); // Close the dialog
-                      },
-                      child: const Text('Add'),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             );
@@ -626,7 +673,8 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
       String accessToken = await getFirebaseAccessToken();
       var request = http.MultipartRequest(
         'POST',
-        Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/${selectedInteractionMember['member_id']}?image'),
+       // Uri.parse('https://prayojana-api-v1.slashdr.com/rest/files/upload/member/${selectedInteractionMember['member_id']}?image'),
+        Uri.parse(ApiConstants.awsUrl(selectedInteractionMember['member_id'])),
       );
       request.files.add(await http.MultipartFile.fromPath(
           'image', filePath,
@@ -862,7 +910,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                         _dropdownFocusNode.unfocus();
                         selectedInteractionStatusTypeId = newValue;
                         selectedInteractionStatusType = interactionStatusTypes.firstWhere((statusType) => statusType['id'] == newValue)['name'];
-                        print('newvalue $newValue');
+                        print('newValue $newValue');
                         print('selectedInteractionStatusTypeId $selectedInteractionStatusTypeId');
                         print('selectedInteractionStatusType $selectedInteractionStatusType');
                       });
@@ -912,20 +960,19 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                         ),
                         decoration:  InputDecoration(
                           label: const Text('Attachments'),
-                          labelStyle: TextStyle(fontWeight:FontWeight.w500,fontSize: 16.sp,),
+                            labelStyle: TextStyle(fontWeight:FontWeight.w500,fontSize: 16.sp,color: Colors.blue),
                           hintText: 'Photos, documents etc..',
                           suffixIcon: IconButton(
-                            icon:const Icon(Icons.add),
-                            color: const Color(0xff999999),
+                            icon: const Icon(Icons.add_circle),
+                            color: Colors.blue,
                             onPressed: () {
-                              isFormChanged = true;
-
-                              print('on pressed - $pickedFile');
-                              var filepath = pickedFile!.path;
-                              // print('pickedFile path - $filepath');
-                              uploadFile(pickedFileName! , pickedFile!.path);
+                              if(pickedFile!=null) {
+                                print('on pressed - $pickedFile');
+                                var filepath = pickedFile!.path;
+                                uploadFile(pickedFileName!, pickedFile!.path);
+                              }
                             },
-                          ),
+                          )
                           //suffixIcon: const Icon(Icons.add),
                         ),
                       ),
