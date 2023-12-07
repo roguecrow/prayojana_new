@@ -1,42 +1,44 @@
 
-import 'dart:convert';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:prayojana_new/main.dart';
-import 'package:prayojana_new/screens/dashboard%20page/dashboard_screen.dart';
-import 'package:prayojana_new/screens/notification%20page/push_notification_screen.dart';
+
 import 'package:prayojana_new/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:io' show Platform;
 
 import '../floor/database.dart';
 import '../floor/notification_model.dart';
+import '../myApp.dart';
 
 
 class FirebaseApi{
 
-  final _firebaseMessageing = FirebaseMessaging.instance;
+  final _firebaseMessaging = FirebaseMessaging.instance;
 
   Future<void> initNotification() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await _firebaseMessageing.requestPermission();
-    final FCMToken = await _firebaseMessageing.getToken();
-    print('Token :$FCMToken');
-    if (FCMToken != null) {
-      await prefs.setString('FCMToken', FCMToken);
-    }
-    int? userId = prefs.getInt('userId');
-    String? platFrom = Platform.isAndroid ? 'Android' : 'IOS';
-    print(userId);
-    print(platFrom);
-    print(FCMToken);
+    await _firebaseMessaging.requestPermission();
+    String? platform = Platform.isAndroid ? 'Android' : 'IOS';
+    String? token;
 
-    print('inserting in db');
-      // Insert new data
-      FCMMessaging.postFCMToken(platFrom, true, FCMToken, userId);
-   // print('forwarding to push notification');
+    if (Platform.isIOS) {
+      token = await _firebaseMessaging.getAPNSToken();
+    } else if (Platform.isAndroid) {
+      token = await _firebaseMessaging.getToken();
+    }
+
+    print('Token: $token');
+    if (token != null) {
+      await prefs.setString('FCMToken', token);
+    }
+
+    int? userId = prefs.getInt('userId');
+    print('Platform: $platform');
+    print('UserID: $userId');
+    print('FCM/APNS Token: $token');
+
+    // Insert the token into the database (assuming FCMMessaging.postFCMToken is a method that handles this)
+    FCMMessaging.postFCMToken(platform, true, token, userId);   // print('forwarding to push notification');
     //initPushNotification();
   }
 

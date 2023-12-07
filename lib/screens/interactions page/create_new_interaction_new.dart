@@ -297,14 +297,20 @@ class _CreateInteractionNewState extends State<CreateInteractionNew> {
                               children: [
                                 IconButton(
                                   onPressed: () {
-                                    Navigator.of(context).pop(); // Close the bottom sheet
+                                    setState(() {
+                                      pickedFile = null; // Set pickedFile to null or empty when IconButton is clicked
+                                      pickedFileName = null;
+                                      fileNameController.clear();
+                                      print('canceled');
+                                    });
+                                    //Navigator.of(context).pop(); // Close the bottom sheet
                                   },
                                   icon: const Icon(Icons.cancel),
                                   iconSize: 30.sp,
                                   color: Colors.red, // Customize the color as needed
                                 ),
                                 Text(
-                                  'Cancel',
+                                  'Remove',
                                   style: TextStyle(
                                     fontSize: 12.sp,
                                     fontWeight: FontWeight.bold,

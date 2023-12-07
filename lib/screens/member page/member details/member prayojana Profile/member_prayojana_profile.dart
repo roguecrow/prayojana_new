@@ -71,9 +71,14 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
           ),
           value is Widget
               ? value
-              : Text(
-            value ?? 'N/A',
-            style: TextStyle(fontSize: fontSize, fontWeight: fontWeight),
+              : SizedBox(
+            width: 140.w, // Set a maximum width for the value text
+            child: Text(
+                value != null && value.toString().length > 15
+                    ? '${value.toString().substring(0, 15)}...'
+                    : value ?? 'N/A',
+              style: TextStyle(fontSize: fontSize, fontWeight: fontWeight),
+            ),
           ),
         ],
       ),
@@ -297,25 +302,30 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
 
                     _buildInfoRow(
                       'Carebuddy Names',
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: memberPrayojanaProfileDetails.isNotEmpty &&
-                            memberPrayojanaProfileDetails[0]['member_carebuddies'] != null
-                            ? memberPrayojanaProfileDetails[0]['member_carebuddies']
-                            .map<Widget>((carebuddy) {
-                          final userName = carebuddy['user'] != null && carebuddy['user']['name'] != null
-                              ? carebuddy['user']['name']
-                              : 'N/A';  // note this do not empty carebuddy name
+                      Expanded(
+                        child: Padding(
+                          padding:  EdgeInsets.only(left: 30.0.w),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: memberPrayojanaProfileDetails.isNotEmpty &&
+                                memberPrayojanaProfileDetails[0]['member_carebuddies'] != null
+                                ? memberPrayojanaProfileDetails[0]['member_carebuddies']
+                                .map<Widget>((carebuddy) {
+                              final userName = carebuddy['user'] != null && carebuddy['user']['name'] != null
+                                  ? carebuddy['user']['name']
+                                  : 'N/A';  // note this do not empty carebuddy name
 
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: 2.0.h), // Add some bottom padding
-                            child: Text(
-                              userName,
-                              style: TextStyle(fontSize: 14.0.sp),
-                            ),
-                          );
-                        }).toList()
-                            : [const Text('N/A')],
+                              return Padding(
+                                padding: EdgeInsets.only(bottom: 2.0.h), // Add some bottom padding
+                                child: Text(
+                                  userName,
+                                  style: TextStyle(fontSize: 14.0.sp),
+                                ),
+                              );
+                            }).toList()
+                                : [const Text('N/A')],
+                          ),
+                        ),
                       ),
                       fontSize: 14.0.sp,
                     ),

@@ -171,6 +171,18 @@ class _AppDrawerState extends State<AppDrawer> {
     );
   }
 
+  void _navigateToProfileScreen() async {
+    final shouldUpdate = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const ProfilePage(userDetails: {}),
+      ),
+    );
+    if(shouldUpdate == true) {
+      loadUserData();
+    }
+  }
+
 
 
   Widget build(BuildContext context) {
@@ -181,11 +193,7 @@ class _AppDrawerState extends State<AppDrawer> {
         icon: const Icon(Icons.account_circle_outlined, color: Colors.white),
         title: 'Profile',
         onTap: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => ProfilePage(userDetails: {}),
-            ),
-          );
+          _navigateToProfileScreen();
         },
       ),
 

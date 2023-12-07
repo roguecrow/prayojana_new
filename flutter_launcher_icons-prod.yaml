@@ -1,0 +1,5 @@
+   flutter_icons:
+    android: true # should be bool or path to icon
+    ios: true
+    image_path: "assets/app_icons/ic_launcher_prod.png" # path icon
+    remove_alpha_ios: true

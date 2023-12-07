@@ -254,6 +254,7 @@ class _CalendarScreenState extends State<CalendarScreen> {
                           ),
                           SizedBox(height: 4.h),
                           ListView.builder(
+                            physics: const NeverScrollableScrollPhysics(), // Disable scrolling
                             shrinkWrap: true,
                             itemCount: tasks.length,
                             itemBuilder: (BuildContext context, int index) {
@@ -316,42 +317,42 @@ class _CalendarScreenState extends State<CalendarScreen> {
                             },
                           ),
                           Divider(height: 30.h,indent: 5.w,color: Colors.black,), // Added Divider
-                          SizedBox(
-                            width: ScreenUtil().screenWidth - 20.w,
-                            child: Padding(
-                              padding:  EdgeInsets.only(left: 12.0.w,bottom: 20.h),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start, // Align children to the start (left)
-                                children: [
-                                   Text(
-                                      "EVENTS",
-                                      style: TextStyle(
-                                        fontSize: 12.sp,
-                                        fontWeight: FontWeight.w500,
-                                      )
-                                  ),
-                                  SizedBox(height: 10.h,),
-                                  Row(
-                                    children: [
-                                      Image.asset(
-                                        "assets/icons/Star.png",
-                                        height: 15.h,
-                                      ),
-                                      SizedBox(width: 12.w),
-                                      Text(
-                                        "Raghu’s Anniversary",
-                                        style: TextStyle(
-                                          color: const Color(0xff018fff),
-                                          fontSize: 14.sp,
-                                          fontWeight: FontWeight.w500,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
+                          // SizedBox(
+                          //   width: ScreenUtil().screenWidth - 20.w,
+                          //   child: Padding(
+                          //     padding:  EdgeInsets.only(left: 12.0.w,bottom: 20.h),
+                          //     child: Column(
+                          //       crossAxisAlignment: CrossAxisAlignment.start, // Align children to the start (left)
+                          //       children: [
+                          //          Text(
+                          //             "EVENTS",
+                          //             style: TextStyle(
+                          //               fontSize: 12.sp,
+                          //               fontWeight: FontWeight.w500,
+                          //             )
+                          //         ),
+                          //         SizedBox(height: 10.h,),
+                          //         Row(
+                          //           children: [
+                          //             Image.asset(
+                          //               "assets/icons/Star.png",
+                          //               height: 15.h,
+                          //             ),
+                          //             SizedBox(width: 12.w),
+                          //             Text(
+                          //               "Raghu’s Anniversary",
+                          //               style: TextStyle(
+                          //                 color: const Color(0xff018fff),
+                          //                 fontSize: 14.sp,
+                          //                 fontWeight: FontWeight.w500,
+                          //               ),
+                          //             ),
+                          //           ],
+                          //         ),
+                          //       ],
+                          //     ),
+                          //   ),
+                          // ),
                         ],
                       ),
                     ),

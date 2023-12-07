@@ -482,7 +482,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         SizedBox(height: 12.h,),
                         Container(
                           decoration: BoxDecoration(
-                            color:  const Color(0xfff1f9ff),
+                            color: Colors.grey[200],
                             borderRadius: BorderRadius.circular(12.r),
                           ),
                           child: Padding(
@@ -510,7 +510,7 @@ class _ProfilePageState extends State<ProfilePage> {
                         SizedBox(height: 12.h,),
                         Container(
                           decoration: BoxDecoration(
-                            color: const  Color(0xfff1f9ff),
+                            color: Colors.grey[200],
                             borderRadius: BorderRadius.circular(12.r),
                           ),
                           child: Padding(

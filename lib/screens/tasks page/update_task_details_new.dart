@@ -491,10 +491,17 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
+                            if(pickedFile != null)
                             Column(
                               children: [
                                 IconButton(
                                   onPressed: () {
+                                    setState(() {
+                                      pickedFile = null; // Set pickedFile to null or empty when IconButton is clicked
+                                      pickedFileName = null;
+                                      fileNameController.clear();
+                                      print('canceled');
+                                    });
                                     Navigator.of(context).pop(); // Close the bottom sheet
                                   },
                                   icon: const Icon(Icons.cancel),
@@ -502,7 +509,7 @@ class _NewTaskDetailsScreenState extends State<NewTaskDetailsScreen> {
                                   color: Colors.red, // Customize the color as needed
                                 ),
                                 Text(
-                                  'Cancel',
+                                  'Remove',
                                   style: TextStyle(
                                     fontSize: 12.sp,
                                     fontWeight: FontWeight.bold,

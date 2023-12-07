@@ -752,7 +752,7 @@ String getMemberHealthQuery(int id) {
         name
       }
     }
-    member_medical_centers {
+    member_medical_centers(where: {is_active: {_eq: true}}) {
       medical_center {
         id
         name
@@ -764,7 +764,7 @@ String getMemberHealthQuery(int id) {
       }
       id
     }
-    member_doctors {
+    member_doctors(where: {is_active: {_eq: true}}) {
       doctor {
         id
         name
@@ -847,7 +847,7 @@ String getMemberAssistanceQuery(int id) {
 String getMemberDocumentsQuery(int id) {
   return '''
 query MyQuery {
-  member_documents(where: {member_id: {_eq: $id }}) {
+  member_documents(where: {member_id: {_eq: $id },is_active: {_eq: true}}) {
     id
     image
     member_id
@@ -1113,17 +1113,17 @@ query MyQuery {
 ''';
 
 const String updateMemberMedicalCenterDetails = r'''
-mutation MyMutation($id: Int!, $member_id: Int!, $medical_center_id: Int!) {
+mutation MyMutation($id: Int!, $member_id: Int!, $medical_center_id: Int!, $is_active: Boolean!) {
   update_member_medical_center(
-    where: {id: {_eq: $id}, member_id: {_eq: $member_id}}, 
-    _set: {medical_center_id: $medical_center_id}
-  ) {
+  where: {id: {_eq: $id}, member_id: {_eq: $member_id}},
+   _set: {medical_center_id: $medical_center_id, is_active: $is_active}) {
     affected_rows
     returning {
       medical_center_id
       medical_center {
         name
       }
+      is_active
     }
   }
 }
@@ -1176,11 +1176,8 @@ query MyQuery {
 }
 
 const String updateDoctorDetails = r'''
-mutation MyMutation($id: Int!, $member_id: Int!, $doctor_address_id: Int!, $doctor_id: Int!) {
-  update_member_doctors(
-    where: {id: {_eq: $id}, member_id: {_eq: $member_id}},
-    _set: {doctor_address_id: $doctor_address_id, doctor_id: $doctor_id}
-  ) {
+mutation MyMutation($id: Int!, $member_id: Int!, $doctor_address_id: Int!, $doctor_id: Int!, $is_active: Boolean!) {
+  update_member_doctors(where: {id: {_eq: $id}, member_id: {_eq: $member_id}}, _set: {doctor_address_id: $doctor_address_id, doctor_id: $doctor_id, is_active: $is_active}) {
     affected_rows
     returning {
       id
@@ -1190,6 +1187,7 @@ mutation MyMutation($id: Int!, $member_id: Int!, $doctor_address_id: Int!, $doct
       doctor_address {
         address
       }
+      is_active
     }
   }
 }

@@ -276,16 +276,6 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                                       ),
                                     ),
                                   ),
-                                  // IconButton(
-                                  //   onPressed: () {
-                                  //     setState(() {
-                                  //       pickedFile = null;
-                                  //       pickedFileName = null;
-                                  //       fileNameController.clear();
-                                  //     });
-                                  //   },
-                                  //   icon: const Icon(Icons.delete),
-                                  // ),
                                 ],
                               ),
                             ],
@@ -294,10 +284,17 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                           children: [
+                            if(pickedFile != null)
                             Column(
                               children: [
                                 IconButton(
                                   onPressed: () {
+                                      setState(() {
+                                        pickedFile = null; // Set pickedFile to null or empty when IconButton is clicked
+                                        pickedFileName = null;
+                                        fileNameController.clear();
+                                        print('canceled');
+                                      });
                                     Navigator.of(context).pop(); // Close the bottom sheet
                                   },
                                   icon: const Icon(Icons.cancel),
@@ -305,7 +302,7 @@ class _InteractionDetailsScreenNewState extends State<InteractionDetailsScreenNe
                                   color: Colors.red, // Customize the color as needed
                                 ),
                                 Text(
-                                  'Cancel',
+                                  'Remove',
                                   style: TextStyle(
                                     fontSize: 12.sp,
                                     fontWeight: FontWeight.bold,

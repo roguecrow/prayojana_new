@@ -1,6 +1,7 @@
 import UIKit
 import Flutter
 import Firebase // Add this import
+import FirebaseCore
 @UIApplicationMain
 @objc class AppDelegate: FlutterAppDelegate, MessagingDelegate  {
   override func application(

@@ -598,6 +598,7 @@ import 'create_new_interaction_new.dart';
                 ),
               ))
                   : ListView.separated(
+                physics: const BouncingScrollPhysics(),
                 controller: scrollController ,
                 itemCount: interactionMembers!.length,
                 separatorBuilder: (context, index) => const Divider(

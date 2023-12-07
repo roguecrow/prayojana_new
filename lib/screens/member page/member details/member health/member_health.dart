@@ -159,8 +159,6 @@ class _MemberHealthState extends State<MemberHealth> {
 
 
 
-
-
   Future<void> _fetchMemberHealthDetails() async {
     var memberId = widget.member['id'];
     print('Clicked Member ID: $memberId');
@@ -249,7 +247,7 @@ class _MemberHealthState extends State<MemberHealth> {
   }
 
 
-  Future<void> _updateMemberDoctors(int id, int memberId, int doctorAddressId, int doctorId) async {
+  Future<void> _updateMemberDoctors(int id, int memberId, int doctorAddressId, int doctorId, bool isActive ) async {
     String accessToken = await getFirebaseAccessToken();
 
     final http.Response response = await http.post(
@@ -267,6 +265,7 @@ class _MemberHealthState extends State<MemberHealth> {
           'member_id': memberId,
           'doctor_address_id': doctorAddressId,
           'doctor_id': doctorId,
+          'is_active': isActive,
         },
       }),
     );
@@ -294,7 +293,7 @@ class _MemberHealthState extends State<MemberHealth> {
     }
   }
 
-  Future<void> _updateMemberMedicalCenterDetails(int id, int memberId, int medicalCenterId) async {
+  Future<void> _updateMemberMedicalCenterDetails(int id, int memberId, int medicalCenterId, bool isActive) async {
     String accessToken = await getFirebaseAccessToken();
 
     final http.Response response = await http.post(
@@ -311,6 +310,7 @@ class _MemberHealthState extends State<MemberHealth> {
           'id': id,
           'member_id': memberId,
           'medical_center_id': medicalCenterId,
+          'is_active': isActive,
         },
       }),
     );
@@ -387,15 +387,32 @@ class _MemberHealthState extends State<MemberHealth> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: () {
-                        Navigator.pop(context, true);
-                        //_createDoctorsAndEditDoctors(context, docdata: doctor, isNewDoctor: false);
-                        _createAndEditItem(context, false, true, doctor);
-                        print('selected doctor - $doctor');
-                        print('Edit Note Button Pressed');
-                      },
-                      icon: const Icon(Icons.edit_note),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            print('doctor - $doctor');
+                            //Navigator.pop(context, true);
+                            //_createDoctorsAndEditDoctors(context, docdata: doctor, isNewDoctor: false);
+                            _updateMemberDoctors(doctor['id'],  widget.member['id'],doctor['doctor']['doctor_addresses'][0]['id'], doctor['doctor']['id'], false);
+                            //_createAndEditItem(context, false, true, doctor);
+                            //print('selected doctor - $doctor');
+                            print('Delete Button Pressed');
+                          },
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            Navigator.pop(context, true);
+                            //_createDoctorsAndEditDoctors(context, docdata: doctor, isNewDoctor: false);
+                            _createAndEditItem(context, false, true, doctor);
+                            print('selected doctor - $doctor');
+                            print('Edit Note Button Pressed');
+                          },
+                          icon: const Icon(Icons.edit_note),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -642,13 +659,13 @@ class _MemberHealthState extends State<MemberHealth> {
                               insertDoctorDetails(widget.member['id'], int.parse(selectedItemId!), int.parse(selectedItemId2!));
 
                             } else {
-                              _updateMemberDoctors(int.parse(itemId!), widget.member['id'], int.parse(selectedItemId2!), int.parse(selectedItemId!));
+                              _updateMemberDoctors(int.parse(itemId!), widget.member['id'], int.parse(selectedItemId2!), int.parse(selectedItemId!),true);
                             }
                           } else {
                             if (isNew) {
                               _createNewMedicalCenter(int.parse(selectedItemId!), widget.member['id']);
                             } else {
-                              _updateMemberMedicalCenterDetails(int.parse(itemId!), widget.member['id'], int.parse(selectedItemId!));
+                              _updateMemberMedicalCenterDetails(int.parse(itemId!), widget.member['id'], int.parse(selectedItemId!),true);
                             }
                           }
                         },
@@ -752,15 +769,30 @@ class _MemberHealthState extends State<MemberHealth> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: ()  {
-                      Navigator.pop(context, true);
-                      print('Edit Note Button Pressed'); // Add this line
-                      //_createAndEditMedicalCenter(context, mcdata: center, isNewCenter: false);
-                      _createAndEditItem(context, false, false, center);
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        onPressed: ()  {
+                          //Navigator.pop(context, true);
+                          print('Delete Button Pressed'); // Add this line
+                          //_createAndEditMedicalCenter(context, mcdata: center, isNewCenter: false);
+                          //_createAndEditItem(context, false, false, center);
+                          _updateMemberMedicalCenterDetails(center['id'], widget.member['id'], center['medical_center']['id'],false);
 
-                    },
-                    icon: const Icon(Icons.edit_note),
+                        },
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                      IconButton(
+                        onPressed: ()  {
+                          Navigator.pop(context, true);
+                          print('Edit Note Button Pressed'); // Add this line
+                          //_createAndEditMedicalCenter(context, mcdata: center, isNewCenter: false);
+                          _createAndEditItem(context, false, false, center);
+                        },
+                        icon: const Icon(Icons.edit_note),
+                      ),
+                    ],
                   ),
                 ],
               ),

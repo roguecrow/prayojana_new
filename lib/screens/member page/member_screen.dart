@@ -581,6 +581,7 @@ class _MemberScreenState extends State<MemberScreen> {
               ),
             )
                 : ListView.builder(
+              physics: const BouncingScrollPhysics(),
               controller: scrollController ,
               itemCount: _membersData!.length,
               itemBuilder: (context, index) {

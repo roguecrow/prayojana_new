@@ -135,7 +135,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           Stack(
             children: [
               Padding(
-                padding:  EdgeInsets.only(right: 4.0.w),
+                padding:  EdgeInsets.only(right: 8.0.w),
                 child: IconButton(
                   onPressed: () {
                     Navigator.of(context).push(
@@ -144,10 +144,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                     );
                   },
-                  icon:  Icon(
+                  icon:  const Icon(
                     Icons.notifications,
                     color: Colors.white,
-                    size: 25.w,
+                    //size: 25.w,
                   ),
                 ),
               ),
@@ -336,6 +336,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             SizedBox(height: 8.h),
                             ListView.builder(
+                              physics: const NeverScrollableScrollPhysics(), // Disable scrolling
                               shrinkWrap: true,
                               itemCount: tasks.length,
                               itemBuilder: (BuildContext context, int index) {
