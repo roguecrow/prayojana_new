@@ -1,4 +1,4 @@
 #include "Pods/Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"
 #include "Generated.xcconfig"
 FLUTTER_TARGET=lib/main_stg.dart
-bundle_suffix = .stg
+//bundle_suffix = .stg
