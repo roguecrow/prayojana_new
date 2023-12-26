@@ -94,49 +94,51 @@ class _MemberNotesState extends State<MemberNotes> {
       builder: (BuildContext context) {
         return Container(
           padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text(
-                'Details',
-                style: TextStyle(
-                  fontSize: 30,
-                  fontWeight: FontWeight.w400,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Text(
+                  'Details',
+                  style: TextStyle(
+                    fontSize: 30,
+                    fontWeight: FontWeight.w400,
+                  ),
                 ),
-              ),
-              const Divider(
-                height: 30.0,
-                thickness: 1,
-              ),
-              ListTile(
-                leading: const Icon(Icons.title),
-                title: const Text('Title'),
-                subtitle: Text(interaction['interaction']['title'] ?? 'N/A'),
-              ),
-              ListTile(
-                leading: const Icon(Icons.date_range),
-                title: const Text('Interaction Date'),
-                subtitle: Text(
-                  interaction['interaction']['interaction_date'] != null
-                      ? DateFormat('dd MMM yyyy').format(DateTime.parse(interaction['interaction']['interaction_date']))
-                      : 'N/A',
+                const Divider(
+                  height: 30.0,
+                  thickness: 1,
                 ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.notes),
-                title: const Text('Notes'),
-                subtitle: Text(
-                  interaction['interaction']['member_summaries'] != null && interaction['interaction']['member_summaries'].isNotEmpty
-                      ? interaction['interaction']['member_summaries'][0]['notes']
-                      : 'N/A',
+                ListTile(
+                  leading: const Icon(Icons.title),
+                  title: const Text('Title'),
+                  subtitle: Text(interaction['interaction']['title'] ?? 'N/A'),
                 ),
-              ),
-              ListTile(
-                leading: const Icon(Icons.candlestick_chart),
-                title: const Text('Status Type'),
-                subtitle: Text(interaction['interaction']['interaction_status_type']['name'] ?? 'N/A'),
-              ),
-            ],
+                ListTile(
+                  leading: const Icon(Icons.date_range),
+                  title: const Text('Interaction Date'),
+                  subtitle: Text(
+                    interaction['interaction']['interaction_date'] != null
+                        ? DateFormat('dd MMM yyyy').format(DateTime.parse(interaction['interaction']['interaction_date']))
+                        : 'N/A',
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.notes),
+                  title: const Text('Notes'),
+                  subtitle: Text(
+                    interaction['interaction']['member_summaries'] != null && interaction['interaction']['member_summaries'].isNotEmpty
+                        ? interaction['interaction']['member_summaries'][0]['notes']
+                        : 'N/A',
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.candlestick_chart),
+                  title: const Text('Status Type'),
+                  subtitle: Text(interaction['interaction']['interaction_status_type']['name'] ?? 'N/A'),
+                ),
+              ],
+            ),
           ),
         );
       },
@@ -206,13 +208,13 @@ class _MemberNotesState extends State<MemberNotes> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: isLoading
-          ? const Center(
-        child:  SizedBox(
-          height: 50,
-          width: 50,
+          ? Center(
+        child: SizedBox(
+          height: 40.h,
+          width: 40.w,
           child: const LoadingIndicator(
-            indicatorType: Indicator.ballPulseSync, /// Required, The loading type of the widget
-            colors: [Color(0xff006bbf)],       /// Optional, The color collections
+            indicatorType: Indicator.ballPulseSync,
+            colors: [Color(0xff006bbf)],
           ),
         ),
       )

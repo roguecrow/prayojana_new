@@ -8,6 +8,7 @@ import 'package:loading_indicator/loading_indicator.dart';
 import 'package:http/http.dart' as http;
 import '../../../../constants.dart';
 import '../../../../graphql_queries.dart';
+import '../../../../other_app_navigator.dart';
 import '../../../../services/api_service.dart';
 import '../member profile/member_profile_edit.dart';
 import 'member_health_edit.dart';
@@ -158,8 +159,6 @@ class _MemberHealthState extends State<MemberHealth> {
 
 
 
-
-
   Future<void> _fetchMemberHealthDetails() async {
     var memberId = widget.member['id'];
     print('Clicked Member ID: $memberId');
@@ -248,7 +247,7 @@ class _MemberHealthState extends State<MemberHealth> {
   }
 
 
-  Future<void> _updateMemberDoctors(int id, int memberId, int doctorAddressId, int doctorId) async {
+  Future<void> _updateMemberDoctors(int id, int memberId, int doctorAddressId, int doctorId, bool isActive ) async {
     String accessToken = await getFirebaseAccessToken();
 
     final http.Response response = await http.post(
@@ -266,6 +265,7 @@ class _MemberHealthState extends State<MemberHealth> {
           'member_id': memberId,
           'doctor_address_id': doctorAddressId,
           'doctor_id': doctorId,
+          'is_active': isActive,
         },
       }),
     );
@@ -293,7 +293,7 @@ class _MemberHealthState extends State<MemberHealth> {
     }
   }
 
-  Future<void> _updateMemberMedicalCenterDetails(int id, int memberId, int medicalCenterId) async {
+  Future<void> _updateMemberMedicalCenterDetails(int id, int memberId, int medicalCenterId, bool isActive) async {
     String accessToken = await getFirebaseAccessToken();
 
     final http.Response response = await http.post(
@@ -310,6 +310,7 @@ class _MemberHealthState extends State<MemberHealth> {
           'id': id,
           'member_id': memberId,
           'medical_center_id': medicalCenterId,
+          'is_active': isActive,
         },
       }),
     );
@@ -335,6 +336,23 @@ class _MemberHealthState extends State<MemberHealth> {
       }
     } else {
       print('API Error: ${response.reasonPhrase}');
+    }
+  }
+
+  String formatDob(String dob) {
+    if (dob == null || dob.isEmpty || dob == 'N/A') return 'N/A';
+
+    try {
+      // Split the date string by spaces
+      List<String> parts = dob.split(' ');
+
+      // Take the relevant parts: Sat Aug 12 1939
+      String formattedDob = '${parts[0]} ${parts[1]} ${parts[2]} ${parts[3]}';
+
+      return formattedDob;
+    } catch (e) {
+      print('Error parsing date: $e');
+      return dob;
     }
   }
 
@@ -369,15 +387,32 @@ class _MemberHealthState extends State<MemberHealth> {
                         ),
                       ),
                     ),
-                    IconButton(
-                      onPressed: () {
-                        Navigator.pop(context, true);
-                        //_createDoctorsAndEditDoctors(context, docdata: doctor, isNewDoctor: false);
-                        _createAndEditItem(context, false, true, doctor);
-                        print('selected doctor - $doctor');
-                        print('Edit Note Button Pressed');
-                      },
-                      icon: const Icon(Icons.edit_note),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        IconButton(
+                          onPressed: () {
+                            print('doctor - $doctor');
+                            //Navigator.pop(context, true);
+                            //_createDoctorsAndEditDoctors(context, docdata: doctor, isNewDoctor: false);
+                            _updateMemberDoctors(doctor['id'],  widget.member['id'],doctor['doctor']['doctor_addresses'][0]['id'], doctor['doctor']['id'], false);
+                            //_createAndEditItem(context, false, true, doctor);
+                            //print('selected doctor - $doctor');
+                            print('Delete Button Pressed');
+                          },
+                          icon: const Icon(Icons.delete_outline),
+                        ),
+                        IconButton(
+                          onPressed: () {
+                            Navigator.pop(context, true);
+                            //_createDoctorsAndEditDoctors(context, docdata: doctor, isNewDoctor: false);
+                            _createAndEditItem(context, false, true, doctor);
+                            print('selected doctor - $doctor');
+                            print('Edit Note Button Pressed');
+                          },
+                          icon: const Icon(Icons.edit_note),
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -423,7 +458,7 @@ class _MemberHealthState extends State<MemberHealth> {
                       subtitle: Text(
                           doctor['doctor']['doctor_addresses'][index]['address']),
                     )
-                        : SizedBox.shrink(); // If it's not a matching address, return an empty SizedBox
+                        : const SizedBox.shrink(); // If it's not a matching address, return an empty SizedBox
                   },
                 ),
               ],
@@ -435,244 +470,6 @@ class _MemberHealthState extends State<MemberHealth> {
   }
 
 
-
-  // void _createDoctorsAndEditDoctors(BuildContext context, {dynamic docdata, bool isNewDoctor = false}) {
-  //   print('Doctor - $docdata');
-  //
-  //   if(docdata != null){
-  //    selectDoctorId = docdata['doctor']['id'].toString();
-  //    // medicalCentersId = docdata['id'];
-  //   }
-  //   else{
-  //     selectDoctorId = null;
-  //   }
-  //
-  //   print('selectDoctorId - $selectDoctorId');
-  //   showModalBottomSheet(
-  //     context: context,
-  //     shape:  RoundedRectangleBorder(
-  //       borderRadius: BorderRadius.vertical(
-  //         top: Radius.circular(20.r),
-  //       ),
-  //     ),
-  //     isScrollControlled: true, // Allow the sheet to take up the full screen height
-  //     builder: (BuildContext context) {
-  //       return SingleChildScrollView(
-  //         child: Container(
-  //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-  //           child: Column(
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: [
-  //               Text(
-  //                 isNewDoctor ? 'Assign Doctor' : 'Update Doctor',
-  //                 style: TextStyle(
-  //                   fontSize: 24.sp,
-  //                   fontWeight: FontWeight.w400,
-  //                 ),
-  //               ),
-  //               Divider(
-  //                 height: 12.0.h,
-  //                 thickness: 1,
-  //               ),
-  //               // Add a DropdownButtonFormField for editing
-  //               Padding(
-  //                 padding: EdgeInsets.only(bottom: 100.0.h, top: 12.h),
-  //                 child: DropdownButtonFormField2<String>(
-  //                   value: selectDoctorId, // Set the selected value based on your logic
-  //                   onChanged: (String? newValue) {
-  //                     setState(() {
-  //                       selectDoctorId = newValue;
-  //                       print('new selectDoctorId - $selectDoctorId');
-  //                     });
-  //                   },
-  //                   items: doctorsList
-  //                       .map<DropdownMenuItem<String>>((Map<String, dynamic> doctor) {
-  //                     return DropdownMenuItem<String>(
-  //                       value: doctor['id'].toString(), // Use the ID as the value
-  //                       child: Text(
-  //                         doctor['name'],
-  //                         style: GoogleFonts.inter(
-  //                           textStyle: const TextStyle(
-  //                             color: Colors.black,
-  //                           ),
-  //                         ),
-  //                       ),
-  //                     );
-  //                   }).toList(),
-  //                   dropdownStyleData: DropdownStyleData(
-  //                     maxHeight: 150.h,
-  //                     // width: 300.w,
-  //                     decoration: BoxDecoration(
-  //                       borderRadius: BorderRadius.circular(14),
-  //                       color: Colors.white,
-  //                     ),
-  //                   ),
-  //                   style: TextStyle(
-  //                     fontSize: 16.sp,
-  //                   ),
-  //                   decoration: InputDecoration(
-  //                     label: const Text('Select Doctor'),
-  //                     hintText: 'Select Doctor',
-  //                     filled: true,
-  //                     fillColor: Colors.white,
-  //                     border: OutlineInputBorder(
-  //                       borderRadius: BorderRadius.circular(8.0),
-  //                       borderSide: const BorderSide(color: Colors.grey),
-  //                     ),
-  //                   ),
-  //                 ),
-  //               ),
-  //               Padding(
-  //                 padding: EdgeInsets.only(bottom: 20.0.h),
-  //                 child: ElevatedButton(
-  //                   onPressed: () {
-  //
-  //                     if (isNewDoctor) {
-  //                       insertDoctorDetails(widget.member['id'], int.parse(selectDoctorId!));
-  //                     } else {
-  //                       _updateMemberMedicalCenterDetails(medicalCentersId,widget.member['id'],int.parse(selectedMedicalCenterId!));
-  //                     }
-  //                   },
-  //                   style: ElevatedButton.styleFrom(
-  //                     foregroundColor: Colors.white, backgroundColor: Colors.blue, // Change the text color
-  //                     minimumSize: const Size(double.maxFinite, 50), // Set the button size
-  //                     shape: RoundedRectangleBorder(
-  //                       borderRadius: BorderRadius.circular(12.0.r), // Adjust the border radius as needed
-  //                     ),
-  //                     elevation: 3, // Add some shadow
-  //                   ),
-  //                   child: const Text(
-  //                     'Update',
-  //                     style: TextStyle(fontSize: 16),
-  //                   ),
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
-  //
-  //
-  // void _createAndEditMedicalCenter(BuildContext context, {dynamic mcdata, bool isNewCenter = false}) {
-  //   print('centers - $mcdata');
-  //
-  //   if(mcdata != null){
-  //     selectedMedicalCenterId = mcdata['medical_center']['id'].toString();
-  //     medicalCentersId = mcdata['id'];
-  //     print(medicalCentersId);
-  //   }
-  //   else{
-  //     selectedMedicalCenterId = null;
-  //   }
-  //   print(selectedMedicalCenterId);
-  //   showModalBottomSheet(
-  //     context: context,
-  //     shape:  RoundedRectangleBorder(
-  //       borderRadius: BorderRadius.vertical(
-  //         top: Radius.circular(20.r),
-  //       ),
-  //     ),
-  //     isScrollControlled: true, // Allow the sheet to take up the full screen height
-  //     builder: (BuildContext context) {
-  //       return SingleChildScrollView(
-  //         child: Container(
-  //           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-  //           child: Column(
-  //             mainAxisSize: MainAxisSize.min,
-  //             children: [
-  //               Text(
-  //                 isNewCenter ? 'Create Medical Center' : 'Edit Medical Center',
-  //                 style: TextStyle(
-  //                   fontSize: 24.sp,
-  //                   fontWeight: FontWeight.w400,
-  //                 ),
-  //               ),
-  //               Divider(
-  //                 height: 12.0.h,
-  //                 thickness: 1,
-  //               ),
-  //               // Add a DropdownButtonFormField for editing
-  //               Padding(
-  //                 padding: EdgeInsets.only(bottom: 100.0.h, top: 12.h),
-  //                 child: DropdownButtonFormField2<String>(
-  //                   value: selectedMedicalCenterId, // Set the selected value based on your logic
-  //                   onChanged: (String? newValue) {
-  //                     setState(() {
-  //                       selectedMedicalCenterId = newValue;
-  //                       print('new selectedMedicalCenterId - $selectedMedicalCenterId');
-  //                     });
-  //                   },
-  //                   items: medicalCentersList
-  //                       .map<DropdownMenuItem<String>>((Map<String, dynamic> center) {
-  //                     return DropdownMenuItem<String>(
-  //                       value: center['id'].toString(), // Use the ID as the value
-  //                       child: Text(
-  //                         center['name'],
-  //                         style: GoogleFonts.inter(
-  //                           textStyle: const TextStyle(
-  //                             color: Colors.black,
-  //                           ),
-  //                         ),
-  //                       ),
-  //                     );
-  //                   }).toList(),
-  //                   dropdownStyleData: DropdownStyleData(
-  //                     maxHeight: 150.h,
-  //                     // width: 300.w,
-  //                     decoration: BoxDecoration(
-  //                       borderRadius: BorderRadius.circular(14),
-  //                       color: Colors.white,
-  //                     ),
-  //                   ),
-  //                   style: TextStyle(
-  //                     fontSize: 16.sp,
-  //                   ),
-  //                   decoration: InputDecoration(
-  //                     label: const Text('Select Medical Center'),
-  //                     hintText: 'Select Medical Center',
-  //                     filled: true,
-  //                     fillColor: Colors.white,
-  //                     border: OutlineInputBorder(
-  //                       borderRadius: BorderRadius.circular(8.0),
-  //                       borderSide: const BorderSide(color: Colors.grey),
-  //                     ),
-  //                   ),
-  //                 ),
-  //               ),
-  //               Padding(
-  //                 padding: EdgeInsets.only(bottom: 20.0.h),
-  //                 child: ElevatedButton(
-  //                   onPressed: () {
-  //                     if (isNewCenter) {
-  //                       _createNewMedicalCenter(int.parse(selectedMedicalCenterId!), widget.member['id']);
-  //                     } else {
-  //                       _updateMemberMedicalCenterDetails(medicalCentersId,widget.member['id'],int.parse(selectedMedicalCenterId!));
-  //                     }
-  //                   },
-  //                   style: ElevatedButton.styleFrom(
-  //                     foregroundColor: Colors.white, backgroundColor: Colors.blue, // Change the text color
-  //                     minimumSize: const Size(double.maxFinite, 50), // Set the button size
-  //                     shape: RoundedRectangleBorder(
-  //                       borderRadius: BorderRadius.circular(12.0.r), // Adjust the border radius as needed
-  //                     ),
-  //                     elevation: 3, // Add some shadow
-  //                   ),
-  //                   child: const Text(
-  //                     'Update',
-  //                     style: TextStyle(fontSize: 16),
-  //                   ),
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //         ),
-  //       );
-  //     },
-  //   );
-  // }
 
   Future<void> _createAndEditItem(BuildContext context, bool isNew, bool isDoctor, dynamic data) async {
     String? selectedItemId;
@@ -795,7 +592,7 @@ class _MemberHealthState extends State<MemberHealth> {
                             visible: selectedItemId != null,
                             child: DropdownButtonFormField2<String>(
                               value: selectedItemId2 ?? null,
-                                onChanged: (String? newValue) {
+                              onChanged: (String? newValue) {
                                 setState(() {
                                   selectedItemId2 = newValue;
                                   print('new selectedItemId2 - $selectedItemId2');
@@ -803,19 +600,30 @@ class _MemberHealthState extends State<MemberHealth> {
                                   print('selectedItemId2 - $selectedItemId2');
                                 });
                               },
-                              items: itemList2.map<DropdownMenuItem<String>>((Map<String, dynamic> item) {
-                                return DropdownMenuItem<String>(
-                                  value: item['id'].toString(),
-                                  child: Text(
-                                    item['address'],
-                                    style: GoogleFonts.inter(
-                                      textStyle: const TextStyle(
-                                        color: Colors.black,
+                              items: [
+                                ...itemList2.map<DropdownMenuItem<String>>((Map<String, dynamic> item) {
+                                  String? address = item['address'];
+
+                                  if (address != null) {
+                                    // Limit the length of the displayed address
+                                    if (address.length > 20) {
+                                      address = '${address.substring(0, 20)}...';
+                                    }
+                                  }
+
+                                  return DropdownMenuItem<String>(
+                                    value: item['id'].toString(),
+                                    child: Text(
+                                      address ?? '',
+                                      style: GoogleFonts.inter(
+                                        textStyle: const TextStyle(
+                                          color: Colors.black,
+                                        ),
                                       ),
                                     ),
-                                  ),
-                                );
-                              }).toList(),
+                                  );
+                                }),
+                              ],
                               dropdownStyleData: DropdownStyleData(
                                 maxHeight: 150.h,
                                 decoration: BoxDecoration(
@@ -851,13 +659,13 @@ class _MemberHealthState extends State<MemberHealth> {
                               insertDoctorDetails(widget.member['id'], int.parse(selectedItemId!), int.parse(selectedItemId2!));
 
                             } else {
-                              _updateMemberDoctors(int.parse(itemId!), widget.member['id'], int.parse(selectedItemId2!), int.parse(selectedItemId!));
+                              _updateMemberDoctors(int.parse(itemId!), widget.member['id'], int.parse(selectedItemId2!), int.parse(selectedItemId!),true);
                             }
                           } else {
                             if (isNew) {
                               _createNewMedicalCenter(int.parse(selectedItemId!), widget.member['id']);
                             } else {
-                              _updateMemberMedicalCenterDetails(int.parse(itemId!), widget.member['id'], int.parse(selectedItemId!));
+                              _updateMemberMedicalCenterDetails(int.parse(itemId!), widget.member['id'], int.parse(selectedItemId!),true);
                             }
                           }
                         },
@@ -961,15 +769,30 @@ class _MemberHealthState extends State<MemberHealth> {
                       ),
                     ),
                   ),
-                  IconButton(
-                    onPressed: ()  {
-                      Navigator.pop(context, true);
-                      print('Edit Note Button Pressed'); // Add this line
-                      //_createAndEditMedicalCenter(context, mcdata: center, isNewCenter: false);
-                      _createAndEditItem(context, false, false, center);
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      IconButton(
+                        onPressed: ()  {
+                          //Navigator.pop(context, true);
+                          print('Delete Button Pressed'); // Add this line
+                          //_createAndEditMedicalCenter(context, mcdata: center, isNewCenter: false);
+                          //_createAndEditItem(context, false, false, center);
+                          _updateMemberMedicalCenterDetails(center['id'], widget.member['id'], center['medical_center']['id'],false);
 
-                    },
-                    icon: const Icon(Icons.edit_note),
+                        },
+                        icon: const Icon(Icons.delete_outline),
+                      ),
+                      IconButton(
+                        onPressed: ()  {
+                          Navigator.pop(context, true);
+                          print('Edit Note Button Pressed'); // Add this line
+                          //_createAndEditMedicalCenter(context, mcdata: center, isNewCenter: false);
+                          _createAndEditItem(context, false, false, center);
+                        },
+                        icon: const Icon(Icons.edit_note),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -1005,19 +828,60 @@ class _MemberHealthState extends State<MemberHealth> {
   }
 
 
-  Widget _buildInfoRow(String label, String value) {
+  Widget _buildInfoRow(String label, String? value, {double fontSize = 14.0, FontWeight? fontWeight}) {
     return Padding(
-      padding:  EdgeInsets.all(10.0.h),
+      padding: EdgeInsets.all(10.0.h),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Text(
             '$label:',
-            style: TextStyle(fontSize: 14.0.sp),
+            style: TextStyle(fontSize: fontSize, fontWeight: fontWeight),
           ),
-          Text(
-            value,
-            style: TextStyle(fontSize: 14.0.sp),
+          value != null && label.toLowerCase() == 'location'
+              ? GestureDetector(
+            onTap: () {
+              // Handle location click action here
+              MapUtils.openMap(value);
+              print('Location clicked: $value');
+            },
+            child: Container(
+              width: 150, // Set a maximum width for the value text
+              child: Text(
+                value,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: fontWeight,
+                  color: Colors.blue, // Style it as a link
+                  decoration: TextDecoration.underline, // Underline it
+                ),
+              ),
+            ),
+          )
+              : label.toLowerCase() == 'agent number'
+              ? GestureDetector(
+            onTap: () {
+              makeCall.makePhoneCall('tel:$value');
+            },
+            child: Container(
+              width: 150, // Set a maximum width for the value text
+              child: Text(
+                value!,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: fontWeight,
+                  color: Colors.blue, // Style it as a link
+                  decoration: TextDecoration.underline, // Underline it
+                ),
+              ),
+            ),
+          )
+              : Container(
+            width: 150, // Set a maximum width for the value text
+            child: Text(
+              value ?? 'N/A',
+              style: TextStyle(fontSize: fontSize, fontWeight: fontWeight),
+            ),
           ),
         ],
       ),
@@ -1025,15 +889,16 @@ class _MemberHealthState extends State<MemberHealth> {
   }
 
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: isLoading
-          ? const Center(
+          ?  Center(
         child: SizedBox(
-          height: 50,
-          width: 50,
-          child: LoadingIndicator(
+          height: 40.h,
+          width: 40.w,
+          child: const LoadingIndicator(
             indicatorType: Indicator.ballPulseSync,
             colors: [Color(0xff006bbf)],
           ),
@@ -1060,10 +925,11 @@ class _MemberHealthState extends State<MemberHealth> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Blood Group', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['blood_group'] != null ? memberHealthDetails[0]['blood_group'] : 'N/A'),
-                _buildInfoRow('Vitacuro ID', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['vitacuro_id'] != null ? memberHealthDetails[0]['vitacuro_id'] : 'N/A'),
-                _buildInfoRow('Date Of Birth', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['dob'] != null ? memberHealthDetails[0]['dob'] : 'N/A'),
-                _buildInfoRow('History', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['medical_history'] != null ? memberHealthDetails[0]['medical_history'] : 'N/A'),
+
+                _buildInfoRow('Blood Group', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['blood_group'] != null ? memberHealthDetails[0]['blood_group'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Vitacuro ID', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['vitacuro_id'] != null ? memberHealthDetails[0]['vitacuro_id'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Date Of Birth', formatDob(memberHealthDetails.isNotEmpty && memberHealthDetails[0]['dob'] != null ? memberHealthDetails[0]['dob'] : 'N/A'),fontSize: 14.0.sp),
+                _buildInfoRow('History', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['medical_history'] != null ? memberHealthDetails[0]['medical_history'] : 'N/A',fontSize: 14.0.sp),
               ],
             ),
           ),
@@ -1267,11 +1133,11 @@ class _MemberHealthState extends State<MemberHealth> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildInfoRow('Insure', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['insurer'] : 'N/A'),
-                _buildInfoRow('Policy Number', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['policy_number'] : 'N/A'),
-                _buildInfoRow('Valid Till', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['valid_till'] : 'N/A'),
-                _buildInfoRow('Agent Name', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['agent_name'] : 'N/A'),
-                _buildInfoRow('Agent Number', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['agent_number'] : 'N/A'),
+                _buildInfoRow('Insure', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['insurer'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Policy Number', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['policy_number'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Valid Till', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['valid_till'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Agent Name', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['agent_name'] : 'N/A',fontSize: 14.0.sp),
+                _buildInfoRow('Agent Number', memberHealthDetails.isNotEmpty && memberHealthDetails[0]['member_insurances'] != null && memberHealthDetails[0]['member_insurances'].isNotEmpty ? memberHealthDetails[0]['member_insurances'][0]['agent_number'] : 'N/A',fontSize: 14.0.sp),
                 if (memberHealthDetails.isEmpty)
                   Center(
                     child: Text(

@@ -40,6 +40,25 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
     super.dispose();
   }
 
+
+  String formatDob(String dob) {
+    if (dob == null || dob.isEmpty || dob == 'N/A') return 'N/A';
+
+    try {
+      // Split the date string by spaces
+      List<String> parts = dob.split(' ');
+
+      // Take the relevant parts: Sat Aug 12 1939
+      String formattedDob = '${parts[0]} ${parts[1]} ${parts[2]} ${parts[3]}';
+
+      return formattedDob;
+    } catch (e) {
+      print('Error parsing date: $e');
+      return dob;
+    }
+  }
+
+
   Widget _buildInfoRow(String label, dynamic value, {double fontSize = 14.0, FontWeight? fontWeight}) {
     return Padding(
       padding: EdgeInsets.all(10.0.h),
@@ -52,9 +71,14 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
           ),
           value is Widget
               ? value
-              : Text(
-            value ?? 'N/A',
-            style: TextStyle(fontSize: fontSize, fontWeight: fontWeight),
+              : SizedBox(
+            width: 140.w, // Set a maximum width for the value text
+            child: Text(
+                value != null && value.toString().length > 15
+                    ? '${value.toString().substring(0, 15)}...'
+                    : value ?? 'N/A',
+              style: TextStyle(fontSize: fontSize, fontWeight: fontWeight),
+            ),
           ),
         ],
       ),
@@ -113,72 +137,74 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
                   height: 30.0,
                   thickness: 1,
                 ),
-                  Column(
-                    children: [
-                      ListTile(
-                        leading: const Icon(Icons.playlist_add_check_rounded),
-                        title: const Text('Plan'),
-                        subtitle: Text(
-                          planhistory != null &&
-                              planhistory['plan'] != null &&
-                              planhistory['plan']['name'] != null
-                              ? planhistory['plan']['name']
-                              : 'N/A',
+                  SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        ListTile(
+                          leading: const Icon(Icons.playlist_add_check_rounded),
+                          title: const Text('Plan'),
+                          subtitle: Text(
+                            planhistory != null &&
+                                planhistory['plan'] != null &&
+                                planhistory['plan']['name'] != null
+                                ? planhistory['plan']['name']
+                                : 'N/A',
+                          ),
                         ),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.date_range),
-                        title: const Row(
-                          children: [
-                            Text('Start Date'),
-                            Spacer(), // Add a spacer to push the End Date to the right
-                            Text('End Date'),
-                          ],
+                        ListTile(
+                          leading: const Icon(Icons.date_range),
+                          title: const Row(
+                            children: [
+                              Text('Start Date'),
+                              Spacer(), // Add a spacer to push the End Date to the right
+                              Text('End Date'),
+                            ],
+                          ),
+                          subtitle: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Text(formatDob(planhistory['start_date'] ?? 'N/A')),
+                              const Spacer(), // Add a spacer to push the End Date to the right
+                              Text(formatDob(planhistory['end_date'] ?? 'N/A')),
+                            ],
+                          ),
                         ),
-                        subtitle: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Text(planhistory['start_date'] ?? 'N/A'),
-                            const Spacer(), // Add a spacer to push the End Date to the right
-                            Text(planhistory['end_date'] ?? 'N/A'),
-                          ],
+                        ListTile(
+                          leading: const Icon(Icons.date_range),
+                          title: const Row(
+                            children: [
+                              Text('Plan Amount'),
+                              Spacer(), // Add a spacer to push the End Date to the right
+                              Text('Amount Paid'),
+                            ],
+                          ),
+                          subtitle: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Text(planhistory['plan_amount']?.toString() ?? 'N/A'),
+                              const Spacer(), // Add a spacer to push the End Date to the right
+                              Text(planhistory['amount_paid']?.toString() ?? 'N/A'),
+                            ],
+                          ),
                         ),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.date_range),
-                        title: const Row(
-                          children: [
-                            Text('Plan Amount'),
-                            Spacer(), // Add a spacer to push the End Date to the right
-                            Text('Amount Paid'),
-                          ],
-                        ),
-                        subtitle: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            Text(planhistory['plan_amount']?.toString() ?? 'N/A'),
-                            const Spacer(), // Add a spacer to push the End Date to the right
-                            Text(planhistory['amount_paid']?.toString() ?? 'N/A'),
-                          ],
-                        ),
-                      ),
 
-                      ListTile(
-                        leading: const Icon(Icons.date_range),
-                        title: const Text('Payment Date'),
-                        subtitle: Text(planhistory['payment_date'] ?? 'N/A'),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.type_specimen),
-                        title: const Text('Payment Type'),
-                        subtitle: Text(planhistory['payment_type'] ?? 'N/A'),
-                      ),
-                      ListTile(
-                        leading: const Icon(Icons.link),
-                        title: const Text('Payment ID & Link'),
-                        subtitle: Text('${planhistory['payment_id']} - ${planhistory['link']}' ?? 'N/A'),
-                      ),
-                    ],
+                        ListTile(
+                          leading: const Icon(Icons.date_range),
+                          title: const Text('Payment Date'),
+                          subtitle: Text(formatDob(planhistory['payment_date'] ?? 'N/A')),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.type_specimen),
+                          title: const Text('Payment Type'),
+                          subtitle: Text(planhistory['payment_type'] ?? 'N/A'),
+                        ),
+                        ListTile(
+                          leading: const Icon(Icons.link),
+                          title: const Text('Payment ID & Link'),
+                          subtitle: Text('${planhistory['payment_id']} - ${planhistory['link']}' ?? 'N/A'),
+                        ),
+                      ],
+                    ),
                   ),
               ],
             ),
@@ -194,13 +220,13 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
     _storedContext = context;
     return Scaffold(
       body: isLoading
-          ? const Center(
-        child:  SizedBox(
-          height: 50,
-          width: 50,
-          child: LoadingIndicator(
-            indicatorType: Indicator.ballPulseSync, /// Required, The loading type of the widget
-            colors: [Color(0xff006bbf)],       /// Optional, The color collections
+          ? Center(
+        child: SizedBox(
+          height: 40.h,
+          width: 40.w,
+          child: const LoadingIndicator(
+            indicatorType: Indicator.ballPulseSync,
+            colors: [Color(0xff006bbf)],
           ),
         ),
       )
@@ -276,25 +302,30 @@ class _MemberPrayojanaProfileState extends State<MemberPrayojanaProfile> {
 
                     _buildInfoRow(
                       'Carebuddy Names',
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: memberPrayojanaProfileDetails.isNotEmpty &&
-                            memberPrayojanaProfileDetails[0]['member_carebuddies'] != null
-                            ? memberPrayojanaProfileDetails[0]['member_carebuddies']
-                            .map<Widget>((carebuddy) {
-                          final userName = carebuddy['user'] != null && carebuddy['user']['name'] != null
-                              ? carebuddy['user']['name']
-                              : 'N/A';  // note this do not empty carebuddy name
+                      Expanded(
+                        child: Padding(
+                          padding:  EdgeInsets.only(left: 30.0.w),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: memberPrayojanaProfileDetails.isNotEmpty &&
+                                memberPrayojanaProfileDetails[0]['member_carebuddies'] != null
+                                ? memberPrayojanaProfileDetails[0]['member_carebuddies']
+                                .map<Widget>((carebuddy) {
+                              final userName = carebuddy['user'] != null && carebuddy['user']['name'] != null
+                                  ? carebuddy['user']['name']
+                                  : 'N/A';  // note this do not empty carebuddy name
 
-                          return Padding(
-                            padding: EdgeInsets.only(bottom: 2.0.h), // Add some bottom padding
-                            child: Text(
-                              userName,
-                              style: TextStyle(fontSize: 14.0.sp),
-                            ),
-                          );
-                        }).toList()
-                            : [const Text('N/A')],
+                              return Padding(
+                                padding: EdgeInsets.only(bottom: 2.0.h), // Add some bottom padding
+                                child: Text(
+                                  userName,
+                                  style: TextStyle(fontSize: 14.0.sp),
+                                ),
+                              );
+                            }).toList()
+                                : [const Text('N/A')],
+                          ),
+                        ),
                       ),
                       fontSize: 14.0.sp,
                     ),

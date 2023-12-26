@@ -78,41 +78,42 @@ android {
     }
 
     buildTypes {
-        debug{
-            resValue "string", "app_name", "prayojana_debug"
+        debug {
+            //resValue "string", "app_name", "prayojana_debug"
         }
         release {
             signingConfig signingConfigs.release
             applicationIdSuffix = ""
-            resValue "string", "app_name", "prayojana"
+            //resValue "string", "app_name", "prayojana"
         }
         profile {
             signingConfig signingConfigs.profile
             applicationIdSuffix = ""
-            resValue "string", "app_name", "prayojana_stg"
+            //resValue "string", "app_name", "prayojana_stg"
         }
     }
-//    flavorDimensions += "default"
-//    productFlavors {
-//        dev {
-//            // Assigns this product flavor to the "version" flavor dimension.
-//            // If you are using only one dimension, this property is optional,
-//            // and the plugin automatically assigns all the module's flavors to
-//            // that dimension.
-//            dimension = "default"
-//            applicationIdSuffix = ".dev"
-//            resValue "string", "app_name", "prayojana-dev"
-//        }
-//        stage {
-//            dimension = "default"
-//            applicationIdSuffix = ".stage"
-//            resValue "string", "app_name", "prayojana-stage"
-//        }
-//        prod {
-//            dimension = "default"
-//            resValue "string", "app_name", "prayojana"
-//        }
-//    }
+
+    flavorDimensions += "default"
+    productFlavors {
+        dev {
+            // Assigns this product flavor to the "version" flavor dimension.
+            // If you are using only one dimension, this property is optional,
+            // and the plugin automatically assigns all the module's flavors to
+            // that dimension.
+            dimension = "default"
+            applicationIdSuffix = ".dev"
+            resValue "string", "app_name", "prayojana-dev"
+        }
+        stage {
+            dimension = "default"
+            applicationIdSuffix = ".stg"
+            resValue "string", "app_name", "prayojana-stage"
+        }
+        prod {
+            dimension = "default"
+            resValue "string", "app_name", "prayojana"
+        }
+    }
 }
 
 flutter {
