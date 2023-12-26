@@ -252,7 +252,7 @@ class _AppDrawerState extends State<AppDrawer> {
                     firstName ?? '',
                     style: TextStyle(color: Colors.white, fontSize: 25.sp),
                   ),
-                  SizedBox(height: 4.h),
+                  //SizedBox(height: 4.h),
                   Text(
                     phone ?? '',
                     style: TextStyle(

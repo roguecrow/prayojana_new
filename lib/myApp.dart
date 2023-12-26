@@ -32,6 +32,7 @@ class _MyAppState extends State<MyApp> {
         return MaterialApp(
           title: 'Prayojana',
           theme: ThemeData(
+            useMaterial3: false,
             textTheme: GoogleFonts.interTextTheme(
               Theme.of(context).textTheme,
             ),
